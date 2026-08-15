@@ -12,7 +12,7 @@ func ParseAmount(s string) (Amount, error) {
 	cleanString := strings.TrimSpace(s)
 
 	if cleanString == "" {
-		return 0, fmt.Errorf("empty string is not a valid amount")
+		return 0, fmt.Errorf("%w: empty string", ErrInvalidAmount)
 	}
 
 	isNegative := false
@@ -24,12 +24,12 @@ func ParseAmount(s string) (Amount, error) {
 	if cleanString[0] == '-' || cleanString[0] == '+' {
 		cleanString = cleanString[1:]
 		if cleanString == "" {
-			return 0, fmt.Errorf("invalid amount string")
+			return 0, ErrInvalidAmount
 		}
 	}
 
 	if strings.Contains(cleanString, "-") || strings.Contains(cleanString, "+") {
-		return 0, fmt.Errorf("invalid character in amount string")
+		return 0, fmt.Errorf("%w: invalid character", ErrInvalidAmount)
 	}
 
 	integerPart, decimalPart, hasDecimal := strings.Cut(cleanString, ".")
@@ -44,7 +44,7 @@ func ParseAmount(s string) (Amount, error) {
 
 	decimalPart, err := normalizeDecimalPart(decimalPart)
 	if err != nil {
-		return 0, fmt.Errorf("invalid decimal part: %w", err)
+		return 0, err
 	}
 
 	return parseStringParts(integerPart, decimalPart, isNegative)
@@ -62,11 +62,8 @@ func normalizeDecimalPart(decimalPart string) (string, error) {
 	case len(decimalPart) == 2:
 		return decimalPart, nil
 
-	case len(decimalPart) > 2:
-		return "", fmt.Errorf("2 maximum decimal places allowed, got %d", len(decimalPart))
-
 	default:
-		return "", fmt.Errorf("unexpected decimal part length: %d", len(decimalPart))
+		return "", fmt.Errorf("%w: unexpected decimal part length: %d", ErrInvalidAmount, len(decimalPart))
 	}
 
 }
@@ -75,12 +72,12 @@ func parseStringParts(integerPart, decimalPart string, isNegative bool) (Amount,
 
 	integerValue, err := strconv.ParseInt(integerPart, 10, 64)
 	if err != nil {
-		return 0, fmt.Errorf("invalid integer part: %w", err)
+		return 0, fmt.Errorf("%w: invalid integer part: %v", ErrInvalidAmount, err)
 	}
 
 	decimalValue, err := strconv.ParseInt(decimalPart, 10, 64)
 	if err != nil {
-		return 0, fmt.Errorf("invalid decimal part: %w", err)
+		return 0, fmt.Errorf("%w: invalid decimal part: %v", ErrInvalidAmount, err)
 	}
 
 	result := integerValue*100 + decimalValue

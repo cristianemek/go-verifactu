@@ -1,6 +1,7 @@
 package record
 
 import (
+	"errors"
 	"testing"
 )
 
@@ -51,6 +52,9 @@ func TestParseAmountInvalid(t *testing.T) {
 			_, err := ParseAmount(tt.input)
 			if err == nil {
 				t.Fatalf("ParseAmount %q, expected error and returned nil", tt.input)
+			}
+			if !errors.Is(err, ErrInvalidAmount) {
+				t.Errorf("ParseAmount %q, expected ErrInvalidAmount and returned: %v", tt.input, err)
 			}
 		})
 	}
