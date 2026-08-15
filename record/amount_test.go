@@ -60,3 +60,26 @@ func TestParseAmountInvalid(t *testing.T) {
 	}
 
 }
+
+func TestAmountFormat(t *testing.T) {
+	tests := []struct {
+		input Amount
+		want  string
+	}{
+		{1210, "12.10"},
+		{1200, "12.00"},
+		{123450, "1234.50"},
+		{-50, "-0.50"},
+		{2199, "21.99"},
+		{7, "0.07"},
+		{0, "0.00"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.want, func(t *testing.T) {
+			got := tt.input.Format()
+			if got != tt.want {
+				t.Errorf("Amount.Format() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}

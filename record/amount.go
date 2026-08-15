@@ -87,3 +87,25 @@ func parseStringParts(integerPart, decimalPart string, isNegative bool) (Amount,
 
 	return Amount(result), nil
 }
+
+func (a Amount) Format() string {
+	v := int64(a)
+	sign := ""
+
+	if v < 0 {
+		sign = "-"
+		v = -v
+	}
+
+	intPart := v / 100
+	decimalPart := v % 100
+
+	intPartStr := strconv.FormatInt(intPart, 10)
+	decimalPartStr := strconv.FormatInt(decimalPart, 10)
+
+	if len(decimalPartStr) == 1 {
+		decimalPartStr = "0" + decimalPartStr
+	}
+
+	return sign + intPartStr + "." + decimalPartStr
+}
