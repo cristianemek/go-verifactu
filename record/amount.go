@@ -9,6 +9,8 @@ import (
 
 type Amount int64
 
+type Porcentaje int64
+
 func ParseAmount(s string) (Amount, error) {
 	cleanString := strings.TrimSpace(s)
 
@@ -113,4 +115,47 @@ func (a Amount) Format() string {
 
 func (a Amount) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 	return e.EncodeElement(a.Format(), start)
+}
+
+func ParsePorcentaje(s string) (Porcentaje, error) {
+	porcentaje, err := ParseAmount(s)
+
+	if err != nil {
+		return 0, fmt.Errorf("%w: %v", ErrInvalidPorcentaje, err)
+	}
+
+	if strings.HasPrefix(strings.TrimSpace(s), "+") {
+		return 0, fmt.Errorf("%w: porcentaje cannot have sign", ErrInvalidPorcentaje)
+	}
+
+	if porcentaje < 0 {
+		return 0, fmt.Errorf("%w: negative porcentaje", ErrInvalidPorcentaje)
+	}
+
+	if porcentaje > 99999 {
+		return 0, fmt.Errorf("%w: porcentaje exceeds 999.99%%", ErrInvalidPorcentaje)
+	}
+
+	return Porcentaje(porcentaje), nil
+
+}
+
+func (p Porcentaje) Format() string {
+	v := int64(p)
+
+	intPart := v / 100
+	decimalPart := v % 100
+
+	intPartStr := strconv.FormatInt(intPart, 10)
+	decimalPartStr := strconv.FormatInt(decimalPart, 10)
+
+	if len(decimalPartStr) == 1 {
+		decimalPartStr = "0" + decimalPartStr
+	}
+
+	return intPartStr + "." + decimalPartStr
+}
+
+func (p Porcentaje) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
+	return e.EncodeElement(p.Format(), start)
 }

@@ -115,3 +115,110 @@ func TestAmountMarshalXML(t *testing.T) {
 	}
 
 }
+
+func TestPorcentajeFormat(t *testing.T) {
+	tests := []struct {
+		input Porcentaje
+		want  string
+	}{
+		{1210, "12.10"},
+		{1200, "12.00"},
+		{2199, "21.99"},
+		{7, "0.07"},
+		{0, "0.00"},
+		{99999, "999.99"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.want, func(t *testing.T) {
+			got := tt.input.Format()
+			if got != tt.want {
+				t.Errorf("Porcentaje.Format() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestParsePorcentaje(t *testing.T) {
+	tests := []struct {
+		input string
+		want  Porcentaje
+	}{
+		{"12", 1200},
+		{"12.00", 1200},
+		{"21.99", 2199},
+		{"5.0", 500},
+		{"0", 0},
+		{"   21   ", 2100},
+		{"999.99", 99999},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.input, func(t *testing.T) {
+			got, err := ParsePorcentaje(tt.input)
+			if err != nil {
+				t.Fatalf("ParsePorcentaje %q returned error: %v", tt.input, err)
+			}
+			if got != tt.want {
+				t.Errorf("ParsePorcentaje %q, expected %d and returned: %d", tt.input, tt.want, got)
+			}
+		})
+	}
+}
+
+func TestParsePorcentajeInvalid(t *testing.T) {
+	tests := []struct {
+		input string
+	}{
+		{"abc"},
+		{"12.10.5"},
+		{"12,15"},
+		{""},
+		{"1000"},
+		{"+34"},
+		{"-12"},
+		{"12.-5"},
+		{"-"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.input, func(t *testing.T) {
+			_, err := ParsePorcentaje(tt.input)
+			if err == nil {
+				t.Fatalf("ParsePorcentaje %q, expected error and returned nil", tt.input)
+			}
+			if !errors.Is(err, ErrInvalidPorcentaje) {
+				t.Errorf("ParsePorcentaje %q, expected ErrInvalidPorcentaje and returned: %v", tt.input, err)
+			}
+		})
+	}
+}
+
+func TestPorcentajeMarshalXML(t *testing.T) {
+	type wrapper struct {
+		Porcentaje Porcentaje
+	}
+
+	testCases := []struct {
+		input Porcentaje
+		want  string
+	}{
+		{Porcentaje(1234), "<wrapper><Porcentaje>12.34</Porcentaje></wrapper>"},
+		{Porcentaje(0), "<wrapper><Porcentaje>0.00</Porcentaje></wrapper>"},
+		{Porcentaje(50), "<wrapper><Porcentaje>0.50</Porcentaje></wrapper>"},
+		{Porcentaje(99999), "<wrapper><Porcentaje>999.99</Porcentaje></wrapper>"},
+	}
+
+	for _, tt := range testCases {
+		t.Run(tt.want, func(t *testing.T) {
+			input := wrapper{Porcentaje: tt.input}
+			xmlEnc, err := xml.Marshal(input)
+			if err != nil {
+				t.Fatalf("Porcentaje.MarshalXML returned error: %v", err)
+			}
+
+			if string(xmlEnc) != tt.want {
+				t.Errorf("Porcentaje.MarshalXML() = %q, want %q", string(xmlEnc), tt.want)
+			}
+		})
+	}
+
+}
