@@ -83,17 +83,25 @@ func TestFingerPrintVectors(t *testing.T) {
 					t.Fatalf("Error parsing ImporteTotal: %v", err)
 				}
 
-				var rec = RegistrationRecord{
+				var enc Encadenamiento
+
+				if v.Campos.PreviousHash == "" {
+					enc = NewEncadenamientoPrimerRegistro()
+				} else {
+					enc = NewEncadenamientoRegistroAnterior(v.Campos.IDEmisorFactura, v.Campos.NumSerieFactura, Fecha(expeditionDate), v.Campos.PreviousHash)
+				}
+
+				var rec = RegistroAlta{
 					IDFactura: IDFacturaExpedida{
 						IDEmisorFactura:        v.Campos.IDEmisorFactura,
 						NumSerieFactura:        v.Campos.NumSerieFactura,
 						FechaExpedicionFactura: Fecha(expeditionDate),
 					},
-					TipoFactura:              v.Campos.TipoFactura,
+					TipoFactura:              TipoFactura(v.Campos.TipoFactura),
 					CuotaTotal:               taxAmount,
 					ImporteTotal:             totalAmount,
-					PreviousHash:             v.Campos.PreviousHash,
-					FechaHoraHusoGenRegistro: generationDate,
+					Encadenamiento:           enc,
+					FechaHoraHusoGenRegistro: FechaHora(generationDate),
 				}
 
 				t.Logf("record: %+v", rec)
@@ -113,14 +121,22 @@ func TestFingerPrintVectors(t *testing.T) {
 					t.Fatalf("Error parsing FechaHoraHusoGenRegistro: %v", err)
 				}
 
-				var rec = CancellationRecord{
-					IDFacturaAnulada: IDFacturaExpedidaBaja{
+				var encAnulacion Encadenamiento
+
+				if v.Campos.PreviousHash == "" {
+					encAnulacion = NewEncadenamientoPrimerRegistro()
+				} else {
+					encAnulacion = NewEncadenamientoRegistroAnterior(v.Campos.IDEmisorFacturaAnulada, v.Campos.NumSerieFacturaAnulada, Fecha(expeditionDate), v.Campos.PreviousHash)
+				}
+
+				var rec = RegistroAnulacion{
+					IDFactura: IDFacturaExpedidaBaja{
 						IDEmisorFacturaAnulada:        v.Campos.IDEmisorFacturaAnulada,
 						NumSerieFacturaAnulada:        v.Campos.NumSerieFacturaAnulada,
 						FechaExpedicionFacturaAnulada: Fecha(expeditionDate),
 					},
-					PreviousHash:             v.Campos.PreviousHash,
-					FechaHoraHusoGenRegistro: generationDate,
+					Encadenamiento:           encAnulacion,
+					FechaHoraHusoGenRegistro: FechaHora(generationDate),
 				}
 
 				t.Logf("record: %+v", rec)
