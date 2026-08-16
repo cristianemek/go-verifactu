@@ -1,0 +1,56 @@
+<RegFactuSistemaFacturacion xmlns="https://www2.agenciatributaria.gob.es/static_files/common/internet/dep/aplicaciones/es/aeat/tike/cont/ws/SuministroLR.xsd">
+  <Cabecera xmlns="https://www2.agenciatributaria.gob.es/static_files/common/internet/dep/aplicaciones/es/aeat/tike/cont/ws/SuministroLR.xsd">
+    <ObligadoEmision xmlns="https://www2.agenciatributaria.gob.es/static_files/common/internet/dep/aplicaciones/es/aeat/tike/cont/ws/SuministroInformacion.xsd">
+      <NombreRazon>EMPRESA DE PRUEBAS SL</NombreRazon>
+      <NIF>89890001K</NIF>
+    </ObligadoEmision>
+  </Cabecera>
+  <RegistroFactura>
+    <RegistroAlta xmlns="https://www2.agenciatributaria.gob.es/static_files/common/internet/dep/aplicaciones/es/aeat/tike/cont/ws/SuministroInformacion.xsd">
+      <IDVersion>1.0</IDVersion>
+      <IDFactura>
+        <IDEmisorFactura>89890001K</IDEmisorFactura>
+        <NumSerieFactura>12345678/G33</NumSerieFactura>
+        <FechaExpedicionFactura>01-01-2024</FechaExpedicionFactura>
+      </IDFactura>
+      <NombreRazonEmisor>EMPRESA DE PRUEBAS SL</NombreRazonEmisor>
+      <TipoFactura>F1</TipoFactura>
+      <DescripcionOperacion>Servicios de desarrollo de software</DescripcionOperacion>
+      <Destinatarios>
+        <IDDestinatario>
+          <NombreRazon>CLIENTE SL</NombreRazon>
+          <NIF>B12345674</NIF>
+        </IDDestinatario>
+      </Destinatarios>
+      <Desglose>
+        <DetalleDesglose>
+          <Impuesto>01</Impuesto>
+          <ClaveRegimen>01</ClaveRegimen>
+          <CalificacionOperacion>S1</CalificacionOperacion>
+          <TipoImpositivo>21.00</TipoImpositivo>
+          <BaseImponibleOimporteNoSujeto>100.00</BaseImponibleOimporteNoSujeto>
+          <CuotaRepercutida>21.00</CuotaRepercutida>
+        </DetalleDesglose>
+      </Desglose>
+      <CuotaTotal>21.00</CuotaTotal>
+      <ImporteTotal>121.00</ImporteTotal>
+      <Encadenamiento>
+        <PrimerRegistro>S</PrimerRegistro>
+      </Encadenamiento>
+      <SistemaInformatico>
+        <NombreRazon>MI EMPRESA SL</NombreRazon>
+        <NIF>B87654321</NIF>
+        <NombreSistemaInformatico>go-verifactu</NombreSistemaInformatico>
+        <IdSistemaInformatico>01</IdSistemaInformatico>
+        <Version>0.1.0</Version>
+        <NumeroInstalacion>0001</NumeroInstalacion>
+        <TipoUsoPosibleSoloVerifactu>S</TipoUsoPosibleSoloVerifactu>
+        <TipoUsoPosibleMultiOT>N</TipoUsoPosibleMultiOT>
+        <IndicadorMultiplesOT>N</IndicadorMultiplesOT>
+      </SistemaInformatico>
+      <FechaHoraHusoGenRegistro>2024-01-01T19:20:30+01:00</FechaHoraHusoGenRegistro>
+      <TipoHuella>01</TipoHuella>
+      <Huella>3C464DAF61ACB827C65FDA19F352A4E3BDC2C640E9E9FC4CC058073F38F12F60</Huella>
+    </RegistroAlta>
+  </RegistroFactura>
+</RegFactuSistemaFacturacion>
