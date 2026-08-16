@@ -1,6 +1,6 @@
 package record
 
-func ptr[T any](v T) *T {
+func Ptr[T any](v T) *T {
 	return &v
 }
 
@@ -26,4 +26,26 @@ type EncadenamientoFacturaAnterior struct {
 	NumSerieFactura        string `xml:"NumSerieFactura"`
 	FechaExpedicionFactura Fecha  `xml:"FechaExpedicionFactura"`
 	Huella                 string `xml:"Huella"`
+}
+
+type Encadenamiento struct {
+	PrimerRegistro   *PrimerRegistroCadena          `xml:"PrimerRegistro,omitempty"`
+	RegistroAnterior *EncadenamientoFacturaAnterior `xml:"RegistroAnterior,omitempty"`
+}
+
+func NewEncadenamientoPrimerRegistro() Encadenamiento {
+	return Encadenamiento{
+		PrimerRegistro: Ptr(PrimerRegistroCadenaSi),
+	}
+}
+
+func NewEncadenamientoRegistroAnterior(idEmisor string, numSerie string, fechaExpedicion Fecha, huella string) Encadenamiento {
+	return Encadenamiento{
+		RegistroAnterior: Ptr(EncadenamientoFacturaAnterior{
+			IDEmisorFactura:        idEmisor,
+			NumSerieFactura:        numSerie,
+			FechaExpedicionFactura: fechaExpedicion,
+			Huella:                 huella,
+		}),
+	}
 }
