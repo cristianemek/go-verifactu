@@ -3,6 +3,7 @@ package record
 import (
 	"encoding/xml"
 	"os"
+	"strings"
 	"testing"
 	"time"
 )
@@ -41,7 +42,7 @@ func TestEncadenamientoRegistroAnteriorMarshalXML(t *testing.T) {
 	}
 }
 
-func TestRegistroAltaMarshalXMLShape(t *testing.T) {
+func TestRegistroAltaMatchesReferenceXML(t *testing.T) {
 	expedicion, err := time.Parse(fechaFormat, "01-01-2024")
 	if err != nil {
 		t.Fatalf("Error parsing expedition date: %v", err)
@@ -115,15 +116,12 @@ func TestRegistroAltaMarshalXMLShape(t *testing.T) {
 		t.Fatalf("xml.MarshalIndent returned error: %v", err)
 	}
 
-	t.Logf("\n%s", out)
-
-	err = os.MkdirAll("../testdata/xml", 0755)
+	expected, err := os.ReadFile("../testdata/xml/registro_alta.xml")
 	if err != nil {
-		t.Fatalf("Error creating test data directory: %v", err)
+		t.Fatalf("Error reading expected XML file: %v", err)
 	}
 
-	err = os.WriteFile("../testdata/xml/registro_alta.xml", out, 0644)
-	if err != nil {
-		t.Fatalf("Error writing test data file: %v", err)
+	if string(strings.TrimSpace(string(out))) != string(strings.TrimSpace(string(expected))) {
+		t.Errorf("Generated XML does not match expected XML")
 	}
 }
