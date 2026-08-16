@@ -39,7 +39,7 @@ func registrationFingerprintInput(r RegistrationRecord) string {
 
 	writeField(&b, "IDEmisorFactura", r.IDEmisorFactura)
 	writeField(&b, "NumSerieFactura", r.NumSerieFactura)
-	writeField(&b, "FechaExpedicionFactura", r.FechaExpedicionFactura.Format("02-01-2006"))
+	writeField(&b, "FechaExpedicionFactura", r.FechaExpedicionFactura.Format(fechaFormat))
 	writeField(&b, "TipoFactura", r.TipoFactura)
 	writeField(&b, "CuotaTotal", r.CuotaTotal.Format())
 	writeField(&b, "ImporteTotal", r.ImporteTotal.Format())
@@ -61,7 +61,7 @@ func cancellationFingerprintInput(c CancellationRecord) string {
 
 	writeField(&b, "IDEmisorFacturaAnulada", c.IDEmisorFacturaAnulada)
 	writeField(&b, "NumSerieFacturaAnulada", c.NumSerieFacturaAnulada)
-	writeField(&b, "FechaExpedicionFacturaAnulada", c.FechaExpedicionFacturaAnulada.Format("02-01-2006"))
+	writeField(&b, "FechaExpedicionFacturaAnulada", c.FechaExpedicionFacturaAnulada.Format(fechaFormat))
 	writeField(&b, "Huella", c.PreviousHash)
 	writeField(&b, "FechaHoraHusoGenRegistro", c.FechaHoraHusoGenRegistro.Format(time.RFC3339))
 

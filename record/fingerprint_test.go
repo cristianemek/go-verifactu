@@ -59,7 +59,7 @@ func TestFingerPrintVectors(t *testing.T) {
 
 			switch v.Tipo {
 			case "alta":
-				expeditionDate, err := time.Parse("02-01-2006", v.Campos.FechaExpedicionFactura)
+				expeditionDate, err := time.Parse(fechaFormat, v.Campos.FechaExpedicionFactura)
 
 				if err != nil {
 					t.Fatalf("Error parsing FechaExpedicionFactura: %v", err)
@@ -99,7 +99,7 @@ func TestFingerPrintVectors(t *testing.T) {
 				got = registrationFingerprintInput(rec)
 
 			case "anulacion":
-				expeditionDate, err := time.Parse("02-01-2006", v.Campos.FechaExpedicionFacturaAnulada)
+				expeditionDate, err := time.Parse(fechaFormat, v.Campos.FechaExpedicionFacturaAnulada)
 
 				if err != nil {
 					t.Fatalf("Error parsing FechaExpedicionFacturaAnulada: %v", err)
