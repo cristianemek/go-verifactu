@@ -8,12 +8,10 @@ import (
 )
 
 type RegistrationRecord struct {
-	IDEmisorFactura        string
-	NumSerieFactura        string
-	FechaExpedicionFactura time.Time
-	TipoFactura            string
-	CuotaTotal             Amount
-	ImporteTotal           Amount
+	IDFactura    IDFacturaExpedida
+	TipoFactura  string
+	CuotaTotal   Amount
+	ImporteTotal Amount
 	// PreviousHash is the fingerprint of the previous record in the chain, empty
 	// for the first record of a SIF. Note the naming trap: in the fingerprint
 	// input string this field is named "Huella", but RegistroAlta/Huella in the
@@ -23,9 +21,7 @@ type RegistrationRecord struct {
 }
 
 type CancellationRecord struct {
-	IDEmisorFacturaAnulada        string
-	NumSerieFacturaAnulada        string
-	FechaExpedicionFacturaAnulada time.Time
+	IDFacturaAnulada IDFacturaExpedidaBaja
 	// PreviousHash is the fingerprint of the previous record in the chain, empty
 	// for the first record of a SIF. Note the naming trap: in the fingerprint
 	// input string this field is named "Huella", but RegistroAnulacion/Huella in the
@@ -37,9 +33,9 @@ type CancellationRecord struct {
 func registrationFingerprintInput(r RegistrationRecord) string {
 	var b strings.Builder
 
-	writeField(&b, "IDEmisorFactura", r.IDEmisorFactura)
-	writeField(&b, "NumSerieFactura", r.NumSerieFactura)
-	writeField(&b, "FechaExpedicionFactura", r.FechaExpedicionFactura.Format(fechaFormat))
+	writeField(&b, "IDEmisorFactura", r.IDFactura.IDEmisorFactura)
+	writeField(&b, "NumSerieFactura", r.IDFactura.NumSerieFactura)
+	writeField(&b, "FechaExpedicionFactura", r.IDFactura.FechaExpedicionFactura.Format())
 	writeField(&b, "TipoFactura", r.TipoFactura)
 	writeField(&b, "CuotaTotal", r.CuotaTotal.Format())
 	writeField(&b, "ImporteTotal", r.ImporteTotal.Format())
@@ -59,9 +55,9 @@ func hashFingerprintInput(s string) string {
 func cancellationFingerprintInput(c CancellationRecord) string {
 	var b strings.Builder
 
-	writeField(&b, "IDEmisorFacturaAnulada", c.IDEmisorFacturaAnulada)
-	writeField(&b, "NumSerieFacturaAnulada", c.NumSerieFacturaAnulada)
-	writeField(&b, "FechaExpedicionFacturaAnulada", c.FechaExpedicionFacturaAnulada.Format(fechaFormat))
+	writeField(&b, "IDEmisorFacturaAnulada", c.IDFacturaAnulada.IDEmisorFacturaAnulada)
+	writeField(&b, "NumSerieFacturaAnulada", c.IDFacturaAnulada.NumSerieFacturaAnulada)
+	writeField(&b, "FechaExpedicionFacturaAnulada", c.IDFacturaAnulada.FechaExpedicionFacturaAnulada.Format())
 	writeField(&b, "Huella", c.PreviousHash)
 	writeField(&b, "FechaHoraHusoGenRegistro", c.FechaHoraHusoGenRegistro.Format(time.RFC3339))
 

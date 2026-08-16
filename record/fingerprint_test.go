@@ -84,9 +84,11 @@ func TestFingerPrintVectors(t *testing.T) {
 				}
 
 				var rec = RegistrationRecord{
-					IDEmisorFactura:          v.Campos.IDEmisorFactura,
-					NumSerieFactura:          v.Campos.NumSerieFactura,
-					FechaExpedicionFactura:   expeditionDate,
+					IDFactura: IDFacturaExpedida{
+						IDEmisorFactura:        v.Campos.IDEmisorFactura,
+						NumSerieFactura:        v.Campos.NumSerieFactura,
+						FechaExpedicionFactura: Fecha(expeditionDate),
+					},
 					TipoFactura:              v.Campos.TipoFactura,
 					CuotaTotal:               taxAmount,
 					ImporteTotal:             totalAmount,
@@ -112,11 +114,13 @@ func TestFingerPrintVectors(t *testing.T) {
 				}
 
 				var rec = CancellationRecord{
-					IDEmisorFacturaAnulada:        v.Campos.IDEmisorFacturaAnulada,
-					NumSerieFacturaAnulada:        v.Campos.NumSerieFacturaAnulada,
-					FechaExpedicionFacturaAnulada: expeditionDate,
-					PreviousHash:                  v.Campos.PreviousHash,
-					FechaHoraHusoGenRegistro:      generationDate,
+					IDFacturaAnulada: IDFacturaExpedidaBaja{
+						IDEmisorFacturaAnulada:        v.Campos.IDEmisorFacturaAnulada,
+						NumSerieFacturaAnulada:        v.Campos.NumSerieFacturaAnulada,
+						FechaExpedicionFacturaAnulada: Fecha(expeditionDate),
+					},
+					PreviousHash:             v.Campos.PreviousHash,
+					FechaHoraHusoGenRegistro: generationDate,
 				}
 
 				t.Logf("record: %+v", rec)
