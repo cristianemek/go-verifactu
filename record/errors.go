@@ -4,5 +4,8 @@ import (
 	"errors"
 )
 
-var ErrInvalidAmount = errors.New("record: invalid amount")
-var ErrInvalidPorcentaje = errors.New("record: invalid porcentaje")
+var (
+	ErrInvalidAmount     = errors.New("record: invalid amount")
+	ErrInvalidPorcentaje = errors.New("record: invalid porcentaje")
+	ErrValidation        = errors.New("record: validation error")
+)
