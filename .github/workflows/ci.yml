@@ -25,3 +25,19 @@ jobs:
 
       - name: Test
         run: go test ./...
+
+      - name: Install xmllint
+        run: sudo apt-get update && sudo apt-get install -y libxml2-utils
+
+      - name: Validate XML against AEAT schema
+        run: |
+          shopt -s nullglob
+          files=(testdata/xml/*.xml)
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "no XML files found in testdata/xml"
+            exit 1
+          fi
+          for file in "${files[@]}"; do
+            echo "validating $file"
+            xmllint --noout --schema schemas/v1.0/SuministroLR.xsd "$file"
+          done
