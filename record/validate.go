@@ -5,6 +5,8 @@ import (
 	"fmt"
 )
 
+//todo refactor to aux functions to avoid code duplication
+
 func (r RegistroAlta) Validate() error {
 	var errs []error
 
