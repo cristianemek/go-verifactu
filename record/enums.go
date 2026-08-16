@@ -1,5 +1,7 @@
 package record
 
+const IDVersionActual = "1.0"
+
 // TipoHuella is the hashing algorithm used for the record fingerprint.
 type TipoHuella string
 
