@@ -1,6 +1,7 @@
 package record
 
 import (
+	"encoding/xml"
 	"errors"
 	"testing"
 )
@@ -82,4 +83,35 @@ func TestAmountFormat(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestAmountMarshalXML(t *testing.T) {
+	type wrapper struct {
+		Amount Amount
+	}
+
+	testCases := []struct {
+		input Amount
+		want  string
+	}{
+		{Amount(1234), "<wrapper><Amount>12.34</Amount></wrapper>"},
+		{Amount(-5678), "<wrapper><Amount>-56.78</Amount></wrapper>"},
+		{Amount(0), "<wrapper><Amount>0.00</Amount></wrapper>"},
+		{Amount(50), "<wrapper><Amount>0.50</Amount></wrapper>"},
+	}
+
+	for _, tt := range testCases {
+		t.Run(tt.want, func(t *testing.T) {
+			input := wrapper{Amount: tt.input}
+			xmlEnc, err := xml.Marshal(input)
+			if err != nil {
+				t.Fatalf("Amount.MarshalXML returned error: %v", err)
+			}
+
+			if string(xmlEnc) != tt.want {
+				t.Errorf("Amount.MarshalXML() = %q, want %q", string(xmlEnc), tt.want)
+			}
+		})
+	}
+
 }

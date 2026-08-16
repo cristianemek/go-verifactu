@@ -1,6 +1,7 @@
 package record
 
 import (
+	"encoding/xml"
 	"fmt"
 	"strconv"
 	"strings"
@@ -108,4 +109,8 @@ func (a Amount) Format() string {
 	}
 
 	return sign + intPartStr + "." + decimalPartStr
+}
+
+func (a Amount) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
+	return e.EncodeElement(a.Format(), start)
 }
