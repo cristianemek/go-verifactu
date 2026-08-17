@@ -8,4 +8,5 @@ var (
 	ErrInvalidAmount     = errors.New("record: invalid amount")
 	ErrInvalidPorcentaje = errors.New("record: invalid porcentaje")
 	ErrValidation        = errors.New("record: validation error")
+	ErrInvalidQr         = errors.New("record: invalid QR data")
 )
