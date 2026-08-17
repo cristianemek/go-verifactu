@@ -1,0 +1,12 @@
+package verifactu
+
+import "errors"
+
+var (
+	ErrNoEncontrado = errors.New("verifactu: entry not found")
+	ErrDuplicado    = errors.New("verifactu: entry already exists")
+	// ErrCadenaBifurcada means someone tried to append out of order. Never
+	// recover from this silently: a forked chain cannot be fixed.
+	ErrCadenaBifurcada = errors.New("verifactu: chain forked")
+	ErrStoreRequerido  = errors.New("verifactu: store is required")
+)
