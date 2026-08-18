@@ -35,13 +35,13 @@ func (s *Store) Ultimo(ctx context.Context, t verifactu.Tenant) (*verifactu.Entr
 	return cadena[len(cadena)-1], nil
 }
 
-func (s *Store) Buscar(ctx context.Context, t verifactu.Tenant, id verifactu.IDFactura) (*verifactu.Entry, error) {
+func (s *Store) Buscar(ctx context.Context, t verifactu.Tenant, id verifactu.IDFactura, op verifactu.Operacion) (*verifactu.Entry, error) {
 	s.mu.RLock()
 
 	defer s.mu.RUnlock()
 
 	for _, e := range s.cadenas[t] {
-		if e.IDFactura == id {
+		if e.Matches(id, op) {
 			return e, nil
 		}
 	}
@@ -61,7 +61,7 @@ func (s *Store) Anexar(ctx context.Context, t verifactu.Tenant, e *verifactu.Ent
 	}
 
 	for _, c := range cadena {
-		if c.IDFactura == e.IDFactura && c.Operacion == e.Operacion {
+		if c.Matches(e.IDFactura, e.Operacion) {
 			return verifactu.ErrDuplicado
 		}
 	}
