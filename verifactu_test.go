@@ -11,15 +11,15 @@ import (
 
 type storeFalso struct{}
 
-func (s storeFalso) Ultimo(c context.Context, t Tenant) (*Entry, error) {
+func (s storeFalso) Ultimo(ctx context.Context, t Tenant) (*Entry, error) {
 	return nil, ErrNoEncontrado
 }
 
-func (s storeFalso) Anexar(c context.Context, t Tenant, e *Entry) error {
+func (s storeFalso) Anexar(ctx context.Context, t Tenant, e *Entry) error {
 	return nil
 }
 
-func (s storeFalso) Buscar(c context.Context, t Tenant, id IDFactura, op Operacion) (*Entry, error) {
+func (s storeFalso) Buscar(ctx context.Context, t Tenant, id IDFactura, op Operacion) (*Entry, error) {
 	return nil, ErrNoEncontrado
 }
 
@@ -110,5 +110,49 @@ func TestEqualIDFactura(t *testing.T) {
 				t.Errorf("Expected %v, got %v", tc.expected, result)
 			}
 		})
+	}
+}
+
+func TestLockNoBloqueaOtrosTenants(t *testing.T) {
+
+	e, err := New(Config{Store: storeFalso{}})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tenant1 := Tenant{NIF: "89890001K", IDSistemaInformatico: "01"}
+
+	var wg sync.WaitGroup
+
+	defer wg.Wait()
+
+	releaseA := e.lock(tenant1)
+
+	wg.Add(1)
+
+	defer releaseA()
+
+	go func() {
+		defer wg.Done()
+		lockedTenant := e.lock(tenant1)
+		lockedTenant()
+	}()
+
+	time.Sleep(50 * time.Millisecond)
+
+	tenant2 := Tenant{NIF: "89890002K", IDSistemaInformatico: "01"}
+
+	var hecho = make(chan struct{})
+
+	go func() {
+		releaseB := e.lock(tenant2)
+		defer releaseB()
+		close(hecho)
+	}()
+
+	select {
+	case <-hecho:
+	case <-time.After(2 * time.Second):
+		t.Fatal("tenant2 was blocked by tenant1 lock, but it should not have been")
 	}
 }

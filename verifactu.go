@@ -1,6 +1,8 @@
 package verifactu
 
 import (
+	"context"
+	"errors"
 	"sync"
 	"time"
 
@@ -102,4 +104,70 @@ func (e *Engine) lock(t Tenant) func() {
 
 	return mu.Unlock
 
+}
+
+// Engine overwrites the following fields of the record you pass to it, without prompting:
+// - Encadenamiento, FechaHoraHusoGenRegistro, Huella, TipoHuella, IDVersion
+func (e *Engine) Alta(ctx context.Context, t Tenant, r record.RegistroAlta) (*Entry, error) {
+	release := e.lock(t)
+	defer release()
+
+	id := IDFactura{
+		NIF:      r.IDFactura.IDEmisorFactura,
+		NumSerie: r.IDFactura.NumSerieFactura,
+		Fecha:    r.IDFactura.FechaExpedicionFactura,
+	}
+
+	got, err := e.store.Buscar(ctx, t, id, OperacionAlta)
+
+	if err != nil && !errors.Is(err, ErrNoEncontrado) {
+		return nil, err
+	}
+
+	if err == nil {
+		return got, nil
+	}
+
+	var secuencia uint64
+	var encadenamiento record.Encadenamiento
+
+	last, err := e.store.Ultimo(ctx, t)
+
+	switch {
+	case errors.Is(err, ErrNoEncontrado):
+		secuencia = 1
+		encadenamiento = record.NewEncadenamientoPrimerRegistro()
+
+	case err != nil:
+		return nil, err
+
+	default:
+		secuencia = last.Secuencia + 1
+		encadenamiento = record.NewEncadenamientoRegistroAnterior(last.IDFactura.NIF, last.IDFactura.NumSerie, last.IDFactura.Fecha, last.Huella)
+	}
+
+	r.Encadenamiento = encadenamiento
+	r.FechaHoraHusoGenRegistro = record.FechaHora(e.now().Truncate(time.Second))
+
+	registroAlta, err := record.NewRegistroAlta(r)
+
+	if err != nil {
+		return nil, err
+	}
+
+	entry := Entry{
+		Operacion: OperacionAlta,
+		Alta:      &registroAlta,
+		Secuencia: secuencia,
+		Huella:    registroAlta.Huella,
+		IDFactura: id,
+		Anulacion: nil,
+	}
+
+	err = e.store.Anexar(ctx, t, &entry)
+	if err != nil {
+		return nil, err
+	}
+
+	return &entry, nil
 }
