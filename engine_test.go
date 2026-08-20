@@ -412,3 +412,63 @@ func TestAltaAnulacion(t *testing.T) {
 	}
 
 }
+
+func TestEstado(t *testing.T) {
+	store := memory.New()
+	engine, err := verifactu.New(verifactu.Config{Store: store, Now: fixedTime})
+	if err != nil {
+		t.Fatalf("Error creating engine: %v", err)
+	}
+	tenant := verifactu.Tenant{NIF: "89890001K", IDSistemaInformatico: "01"}
+
+	entryAlta, err := engine.Alta(context.Background(), tenant, validRegistroAlta("001"))
+
+	if err != nil {
+		t.Fatalf("Error creating alta entry: %v", err)
+	}
+
+	testCases := []struct {
+		name      string
+		id        verifactu.IDFactura
+		op        verifactu.Operacion
+		wantEntry *verifactu.Entry
+		wantErr   error
+	}{
+		{
+			name:      "Estado de alta existente",
+			id:        entryAlta.IDFactura,
+			op:        verifactu.OperacionAlta,
+			wantEntry: entryAlta,
+			wantErr:   nil,
+		},
+		{
+			name:      "Diferente operación para alta existente",
+			id:        entryAlta.IDFactura,
+			op:        verifactu.OperacionAnulacion,
+			wantEntry: nil,
+			wantErr:   verifactu.ErrNoEncontrado,
+		},
+		{
+			name:      "Numero de serie inexistente",
+			id:        verifactu.IDFactura{NIF: "89890001K", NumSerie: "002", Fecha: record.Fecha(time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC))},
+			op:        verifactu.OperacionAlta,
+			wantEntry: nil,
+			wantErr:   verifactu.ErrNoEncontrado,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			gotEntry, gotErr := engine.Estado(context.Background(), tenant, tc.id, tc.op)
+			if !errors.Is(gotErr, tc.wantErr) {
+				t.Errorf("Expected error %v, got %v", tc.wantErr, gotErr)
+			}
+
+			if tc.wantEntry != gotEntry {
+				t.Errorf("Expected entry %v, got %v", tc.wantEntry, gotEntry)
+			}
+
+		})
+
+	}
+}

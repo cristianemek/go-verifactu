@@ -226,3 +226,9 @@ func (e *Engine) Anular(ctx context.Context, t Tenant, r record.RegistroAnulacio
 
 	return &entry, nil
 }
+
+// Estado returns the current state of a given invoice, or ErrNoEncontrado if it is not found.
+func (e *Engine) Estado(ctx context.Context, t Tenant, idFactura IDFactura, op Operacion) (*Entry, error) {
+
+	return e.store.Buscar(ctx, t, idFactura, op)
+}
