@@ -106,6 +106,22 @@ func (e *Engine) lock(t Tenant) func() {
 
 }
 
+// Assumes that the caller holds the lock for the tenant. Return the next sequence number and the encadenamiento for the next record.
+func (e *Engine) siguienteCadena(ctx context.Context, t Tenant) (uint64, record.Encadenamiento, error) {
+	last, err := e.store.Ultimo(ctx, t)
+
+	switch {
+	case errors.Is(err, ErrNoEncontrado):
+		return 1, record.NewEncadenamientoPrimerRegistro(), nil
+	case err != nil:
+		return 0, record.Encadenamiento{}, err
+
+	default:
+		return last.Secuencia + 1, record.NewEncadenamientoRegistroAnterior(last.IDFactura.NIF, last.IDFactura.NumSerie, last.IDFactura.Fecha, last.Huella), nil
+	}
+
+}
+
 // Engine overwrites the following fields of the record you pass to it, without prompting:
 // - Encadenamiento, FechaHoraHusoGenRegistro, Huella, TipoHuella, IDVersion
 func (e *Engine) Alta(ctx context.Context, t Tenant, r record.RegistroAlta) (*Entry, error) {
@@ -128,22 +144,10 @@ func (e *Engine) Alta(ctx context.Context, t Tenant, r record.RegistroAlta) (*En
 		return got, nil
 	}
 
-	var secuencia uint64
-	var encadenamiento record.Encadenamiento
+	secuencia, encadenamiento, err := e.siguienteCadena(ctx, t)
 
-	last, err := e.store.Ultimo(ctx, t)
-
-	switch {
-	case errors.Is(err, ErrNoEncontrado):
-		secuencia = 1
-		encadenamiento = record.NewEncadenamientoPrimerRegistro()
-
-	case err != nil:
+	if err != nil {
 		return nil, err
-
-	default:
-		secuencia = last.Secuencia + 1
-		encadenamiento = record.NewEncadenamientoRegistroAnterior(last.IDFactura.NIF, last.IDFactura.NumSerie, last.IDFactura.Fecha, last.Huella)
 	}
 
 	r.Encadenamiento = encadenamiento
@@ -162,6 +166,57 @@ func (e *Engine) Alta(ctx context.Context, t Tenant, r record.RegistroAlta) (*En
 		Huella:    registroAlta.Huella,
 		IDFactura: id,
 		Anulacion: nil,
+	}
+
+	err = e.store.Anexar(ctx, t, &entry)
+	if err != nil {
+		return nil, err
+	}
+
+	return &entry, nil
+}
+
+func (e *Engine) Anular(ctx context.Context, t Tenant, r record.RegistroAnulacion) (*Entry, error) {
+	release := e.lock(t)
+	defer release()
+
+	id := IDFactura{
+		NIF:      r.IDFactura.IDEmisorFacturaAnulada,
+		NumSerie: r.IDFactura.NumSerieFacturaAnulada,
+		Fecha:    r.IDFactura.FechaExpedicionFacturaAnulada,
+	}
+
+	got, err := e.store.Buscar(ctx, t, id, OperacionAnulacion)
+
+	if err != nil && !errors.Is(err, ErrNoEncontrado) {
+		return nil, err
+	}
+
+	if err == nil {
+		return got, nil
+	}
+
+	secuencia, encadenamiento, err := e.siguienteCadena(ctx, t)
+
+	if err != nil {
+		return nil, err
+	}
+
+	r.Encadenamiento = encadenamiento
+	r.FechaHoraHusoGenRegistro = record.FechaHora(e.now().Truncate(time.Second))
+
+	registroAnulacion, err := record.NewRegistroAnulacion(r)
+	if err != nil {
+		return nil, err
+	}
+
+	entry := Entry{
+		Operacion: OperacionAnulacion,
+		Alta:      nil,
+		Anulacion: &registroAnulacion,
+		Secuencia: secuencia,
+		Huella:    registroAnulacion.Huella,
+		IDFactura: id,
 	}
 
 	err = e.store.Anexar(ctx, t, &entry)

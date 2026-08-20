@@ -51,6 +51,27 @@ func validRegistroAlta(numSerie string) record.RegistroAlta {
 	}
 }
 
+func validRegistroAnulacion(numSerie string) record.RegistroAnulacion {
+	return record.RegistroAnulacion{
+		IDFactura: record.IDFacturaExpedidaBaja{
+			IDEmisorFacturaAnulada:        "89890001K",
+			NumSerieFacturaAnulada:        numSerie,
+			FechaExpedicionFacturaAnulada: record.Fecha(time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)),
+		},
+		SistemaInformatico: record.SistemaInformatico{
+			NombreRazon:                 "MI EMPRESA SL",
+			NIF:                         record.Ptr("B87654321"),
+			NombreSistemaInformatico:    "go-verifactu",
+			IdSistemaInformatico:        "01",
+			Version:                     "0.1.0",
+			NumeroInstalacion:           "0001",
+			TipoUsoPosibleSoloVerifactu: record.SiNoSi,
+			TipoUsoPosibleMultiOT:       record.SiNoNo,
+			IndicadorMultiplesOT:        record.SiNoNo,
+		},
+	}
+}
+
 func fixedTime() time.Time {
 	return time.Date(2023, 1, 1, 0, 30, 0, 0, time.FixedZone("CET", 3600))
 }
@@ -327,6 +348,67 @@ func TestConcurrencia(t *testing.T) {
 		if actual.Alta.Encadenamiento.RegistroAnterior.Huella != anterior.Huella {
 			t.Fatalf("Expected RegistroAnterior Huella to match previous entry Huella for entry %d, got %s and %s", i, actual.Alta.Encadenamiento.RegistroAnterior.Huella, anterior.Huella)
 		}
+	}
+
+}
+
+func TestAltaAnulacion(t *testing.T) {
+	store := memory.New()
+	engine, err := verifactu.New(verifactu.Config{Store: store, Now: fixedTime})
+	if err != nil {
+		t.Fatalf("Error creating engine: %v", err)
+	}
+	tenant := verifactu.Tenant{NIF: "89890001K", IDSistemaInformatico: "01"}
+
+	entryAlta, err := engine.Alta(context.Background(), tenant, validRegistroAlta("001"))
+	if err != nil {
+		t.Fatalf("Error creating alta entry: %v", err)
+	}
+
+	entryAnulacion, err := engine.Anular(context.Background(), tenant, validRegistroAnulacion("001"))
+	if err != nil {
+		t.Fatalf("Error creating anulacion entry: %v", err)
+	}
+
+	if entryAnulacion.Secuencia != 2 {
+		t.Fatalf("Expected sequence 2 for anulacion entry, got %d", entryAnulacion.Secuencia)
+	}
+
+	if entryAnulacion.Operacion != verifactu.OperacionAnulacion || entryAnulacion.Anulacion == nil || entryAnulacion.Alta != nil {
+		t.Fatalf("Expected operation 'anulacion' for anulacion entry, got %s", entryAnulacion.Operacion)
+	}
+
+	if entryAnulacion.Anulacion.Encadenamiento.RegistroAnterior == nil || entryAnulacion.Anulacion.Encadenamiento.RegistroAnterior.Huella != entryAlta.Huella {
+		t.Fatalf("Expected RegistroAnterior to be non-nil for anulacion entry, got nil")
+	}
+
+	lastEntry, err := store.Ultimo(context.Background(), tenant)
+	if err != nil {
+		t.Fatalf("Error retrieving last entry: %v", err)
+	}
+
+	if lastEntry.Secuencia != 2 {
+		t.Fatalf("Expected last entry to have sequence 2, got %d", lastEntry.Secuencia)
+	}
+
+	gotEntryAlta, err := store.Buscar(context.Background(), tenant, entryAlta.IDFactura, verifactu.OperacionAlta)
+
+	if err != nil {
+		t.Fatalf("Error retrieving alta entry: %v", err)
+	}
+
+	if gotEntryAlta.Secuencia != entryAlta.Secuencia {
+		t.Fatalf("Expected alta entry with Secuencia %v, got %v", entryAlta.Secuencia, gotEntryAlta.Secuencia)
+	}
+
+	gotEntryAnulacion, err := store.Buscar(context.Background(), tenant, entryAnulacion.IDFactura, verifactu.OperacionAnulacion)
+
+	if err != nil {
+		t.Fatalf("Error retrieving anulacion entry: %v", err)
+	}
+
+	if gotEntryAnulacion.Secuencia != entryAnulacion.Secuencia {
+		t.Fatalf("Expected anulacion entry with Secuencia %v, got %v", entryAnulacion.Secuencia, gotEntryAnulacion.Secuencia)
 	}
 
 }
