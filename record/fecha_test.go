@@ -1,6 +1,7 @@
 package record
 
 import (
+	"encoding/json"
 	"encoding/xml"
 	"testing"
 	"time"
@@ -65,5 +66,69 @@ func TestFechaHoraMarshalXML(t *testing.T) {
 			}
 		})
 
+	}
+}
+
+func TestFechaJson(t *testing.T) {
+	fecha := Fecha(time.Date(2024, 1, 1, 0, 30, 0, 0, time.FixedZone("CET", 3600)))
+
+	jsonData, err := json.Marshal(fecha)
+	if err != nil {
+		t.Fatalf("Fecha.MarshalJSON returned error: %v", err)
+	}
+
+	if string(jsonData) != `"01-01-2024"` {
+		t.Errorf("Fecha.MarshalJSON() = %q, want %q", string(jsonData), `"01-01-2024"`)
+	}
+
+	fecha2 := Fecha{}
+	validJSON := `"01-01-2024"`
+
+	err = json.Unmarshal([]byte(validJSON), &fecha2)
+
+	if err != nil {
+		t.Fatalf("UnmarshalJSON returned error: %v", err)
+	}
+
+	if fecha2.Format() != "01-01-2024" {
+		t.Errorf("UnmarshalJSON() = %q, want %q", fecha2.Format(), "01-01-2024")
+	}
+
+	invalidJSON := `"not-a-date"`
+	err = json.Unmarshal([]byte(invalidJSON), &fecha2)
+	if err == nil {
+		t.Fatalf("Expected error for invalid JSON, got nil")
+	}
+
+}
+
+func TestFechaHoraJson(t *testing.T) {
+	fechaHora := FechaHora(time.Date(2024, 1, 1, 0, 30, 0, 0, time.FixedZone("CET", 3600)))
+	jsonData, err := json.Marshal(fechaHora)
+	if err != nil {
+		t.Fatalf("FechaHora.MarshalJSON returned error: %v", err)
+	}
+
+	if string(jsonData) != `"2024-01-01T00:30:00+01:00"` {
+		t.Errorf("FechaHora.MarshalJSON() = %q, want %q", string(jsonData), `"2024-01-01T00:30:00+01:00"`)
+	}
+
+	fechaHora2 := FechaHora{}
+	validJSON := `"2024-01-01T00:30:00+01:00"`
+
+	err = json.Unmarshal([]byte(validJSON), &fechaHora2)
+
+	if err != nil {
+		t.Fatalf("UnmarshalJSON returned error: %v", err)
+	}
+
+	if fechaHora2.Format() != "2024-01-01T00:30:00+01:00" {
+		t.Errorf("UnmarshalJSON() = %q, want %q", fechaHora2.Format(), "2024-01-01T00:30:00+01:00")
+	}
+
+	invalidJSON := `"not-a-date"`
+	err = json.Unmarshal([]byte(invalidJSON), &fechaHora2)
+	if err == nil {
+		t.Fatalf("Expected error for invalid JSON, got nil")
 	}
 }
