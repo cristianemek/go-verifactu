@@ -176,6 +176,8 @@ func (e *Engine) Alta(ctx context.Context, t Tenant, r record.RegistroAlta) (*En
 	return &entry, nil
 }
 
+// Engine overwrites the following fields of the record you pass to it, without prompting:
+// - Encadenamiento, FechaHoraHusoGenRegistro, Huella, TipoHuella, IDVersion
 func (e *Engine) Anular(ctx context.Context, t Tenant, r record.RegistroAnulacion) (*Entry, error) {
 	release := e.lock(t)
 	defer release()
