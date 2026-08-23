@@ -2,6 +2,7 @@ package verifactu_test
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"sync"
@@ -471,4 +472,40 @@ func TestEstado(t *testing.T) {
 		})
 
 	}
+}
+
+func TestEntryJson(t *testing.T) {
+	store := memory.New()
+
+	engine, err := verifactu.New(verifactu.Config{Store: store, Now: fixedTime})
+	if err != nil {
+		t.Fatalf("Error creating engine: %v", err)
+	}
+
+	entry, err := engine.Alta(context.Background(), verifactu.Tenant{NIF: "89890001K", IDSistemaInformatico: "01"}, validRegistroAlta("001"))
+
+	if err != nil {
+		t.Fatalf("Error creating alta entry: %v", err)
+	}
+
+	entryJson, err := json.Marshal(entry)
+	if err != nil {
+		t.Fatalf("Error marshaling entry to JSON: %v", err)
+	}
+
+	var recuperada verifactu.Entry
+
+	err = json.Unmarshal(entryJson, &recuperada)
+	if err != nil {
+		t.Fatalf("Error unmarshaling JSON to entry: %v", err)
+	}
+
+	if recuperada.Huella != entry.Huella {
+		t.Fatalf("Expected Huella %s, got %s", entry.Huella, recuperada.Huella)
+	}
+
+	if recuperada.Alta.Fingerprint() != recuperada.Huella {
+		t.Fatalf("Expected Alta fingerprint %s, got %s", entry.Alta.Fingerprint(), recuperada.Alta.Fingerprint())
+	}
+
 }

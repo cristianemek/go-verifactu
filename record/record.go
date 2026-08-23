@@ -102,7 +102,7 @@ type Desglose struct {
 // Field order matters — the schema uses a sequence and xmllint will reject a
 // different order.
 type RegistroAlta struct {
-	XMLName xml.Name `xml:"https://www2.agenciatributaria.gob.es/static_files/common/internet/dep/aplicaciones/es/aeat/tike/cont/ws/SuministroInformacion.xsd RegistroAlta"`
+	XMLName xml.Name `xml:"https://www2.agenciatributaria.gob.es/static_files/common/internet/dep/aplicaciones/es/aeat/tike/cont/ws/SuministroInformacion.xsd RegistroAlta" json:"-"`
 
 	IDVersion         string            `xml:"IDVersion"`
 	IDFactura         IDFacturaExpedida `xml:"IDFactura"`
