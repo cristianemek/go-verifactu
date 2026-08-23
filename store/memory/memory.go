@@ -19,8 +19,6 @@ func New() *Store {
 	}
 }
 
-var _ verifactu.Store = (*Store)(nil)
-
 func (s *Store) Ultimo(ctx context.Context, t verifactu.Tenant) (*verifactu.Entry, error) {
 	s.mu.RLock()
 
