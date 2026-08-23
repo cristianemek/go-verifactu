@@ -9,4 +9,5 @@ var (
 	// recover from this silently: a forked chain cannot be fixed.
 	ErrCadenaBifurcada = errors.New("verifactu: chain forked")
 	ErrStoreRequerido  = errors.New("verifactu: store is required")
+	ErrTenantInvalido  = errors.New("verifactu: tenant is invalid")
 )
