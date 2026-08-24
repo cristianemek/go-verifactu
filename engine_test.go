@@ -281,7 +281,7 @@ func TestConcurrencia(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			entry, err := engine.Alta(context.Background(), tenant, validRegistroAlta(fmt.Sprintf("03%d", i+1)))
+			entry, err := engine.Alta(context.Background(), tenant, validRegistroAlta(fmt.Sprintf("%03d", i+1)))
 			if err != nil {
 				errorsCh <- fmt.Errorf("Error creating entry %d: %v", i+1, err)
 				return
