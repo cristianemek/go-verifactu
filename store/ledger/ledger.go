@@ -57,7 +57,7 @@ func New(dir string) (*Store, error) {
 
 		dirPath := filepath.Join(dir, entry.Name())
 
-		entries, err := leerEntradasDesdeArchivo(dirPath)
+		entries, err := cargarCadena(dirPath)
 		if err != nil {
 			return nil, fmt.Errorf("error reading file '%s': %w", dirPath, err)
 		}
@@ -169,7 +169,8 @@ func (s *Store) Anexar(ctx context.Context, t verifactu.Tenant, e *verifactu.Ent
 	return nil
 }
 
-func leerEntradasDesdeArchivo(dir string) ([]*verifactu.Entry, error) {
+// cargarCadena reads a JSONL file and returns a slice of Entry pointers. If the file ends with an incomplete line, it truncates the file to remove that line.
+func cargarCadena(dir string) ([]*verifactu.Entry, error) {
 	file, err := os.Open(dir)
 	if err != nil {
 		return nil, err
@@ -184,6 +185,7 @@ func leerEntradasDesdeArchivo(dir string) ([]*verifactu.Entry, error) {
 	size := fileInfo.Size()
 
 	var bytesCount int64 = 0
+	var truncarA int64 = -1
 
 	var entries []*verifactu.Entry
 	scanner := bufio.NewScanner(file)
@@ -196,6 +198,7 @@ func leerEntradasDesdeArchivo(dir string) ([]*verifactu.Entry, error) {
 		bytesCount += int64(len(scannerBytes)) + 1
 
 		if bytesCount > size {
+			truncarA = bytesCount - int64(len(scannerBytes)) - 1
 			break
 		}
 
@@ -216,6 +219,12 @@ func leerEntradasDesdeArchivo(dir string) ([]*verifactu.Entry, error) {
 
 	if err := scanner.Err(); err != nil {
 		return nil, err
+	}
+
+	if truncarA >= 0 {
+		if err := os.Truncate(dir, truncarA); err != nil {
+			return nil, fmt.Errorf("error truncating file '%s' to %d bytes: %w", dir, truncarA, err)
+		}
 	}
 
 	return entries, nil
