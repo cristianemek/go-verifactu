@@ -2,8 +2,12 @@ package verifactu_test
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
+	"sync"
 	"testing"
 
 	"github.com/cristianemek/go-verifactu"
@@ -184,6 +188,107 @@ func TestLedgerToleraLineaIncompleta(t *testing.T) {
 
 	if ultimoEntry.Secuencia != 4 {
 		t.Fatalf("Expected last entry sequence to be 4, got %d", ultimoEntry.Secuencia)
+	}
+
+}
+
+func TestLedgerConcurrenciaMantieneElOrden(t *testing.T) {
+	dir := t.TempDir()
+
+	store, err := ledger.New(dir)
+	if err != nil {
+		t.Fatalf("Error creating ledger: %v", err)
+	}
+
+	engine, err := verifactu.New(verifactu.Config{Store: store, Now: fixedTime})
+	if err != nil {
+		t.Fatalf("Error creating verifactu engine: %v", err)
+	}
+
+	tenant := verifactu.Tenant{NIF: "89890001K", IDSistemaInformatico: "01"}
+
+	entries := make([]*verifactu.Entry, numAltas)
+	errorsCh := make(chan error, numAltas)
+
+	var wg sync.WaitGroup
+
+	for i := range numAltas {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			entry, err := engine.Alta(context.Background(), tenant, validRegistroAlta(fmt.Sprintf("%03d", i+1)))
+			if err != nil {
+				errorsCh <- fmt.Errorf("Error creating entry %d: %v", i+1, err)
+				return
+			}
+			entries[i] = entry
+		}()
+	}
+	wg.Wait()
+	close(errorsCh)
+
+	for err := range errorsCh {
+		t.Errorf("Error creating entry: %v", err)
+	}
+
+	if t.Failed() {
+		t.FailNow()
+	}
+
+	store, err = ledger.New(dir) //Simulates a restart
+	if err != nil {
+		t.Fatalf("Error creating ledger: %v", err)
+	}
+
+	ultimoEntry, err := store.Ultimo(context.Background(), tenant)
+	if err != nil {
+		t.Fatalf("Error calling Ultimo: %v", err)
+	}
+
+	if ultimoEntry.Secuencia != numAltas {
+		t.Fatalf("Expected last entry sequence to be %d, got %d", numAltas, ultimoEntry.Secuencia)
+	}
+
+	ruta := filepath.Join(dir, "89890001K-01.jsonl")
+
+	fileContent, err := os.ReadFile(ruta)
+	if err != nil {
+		t.Fatalf("Error reading file: %v", err)
+	}
+
+	fileContentStr := strings.TrimRight(string(fileContent), "\n")
+	fileLines := strings.Split(fileContentStr, "\n")
+
+	if len(fileLines) != int(numAltas) {
+		t.Fatalf("Expected %d lines in the file, got %d", numAltas, len(fileLines))
+	}
+
+	previousEntry := verifactu.Entry{}
+
+	for i, line := range fileLines {
+		var entry verifactu.Entry
+		err := json.Unmarshal([]byte(line), &entry)
+		if err != nil {
+			t.Fatalf("Error unmarshalling line %d: %v", i+1, err)
+		}
+		if entry.Secuencia != uint64(i+1) {
+			t.Fatalf("Expected entry sequence to be %d, got %d", i+1, entry.Secuencia)
+		}
+
+		if i == 0 && entry.Alta.Encadenamiento.PrimerRegistro == nil {
+			t.Fatalf("Expected first entry to have PrimerRegistro, got nil")
+		}
+
+		if i > 0 {
+			if entry.Alta.Encadenamiento.RegistroAnterior == nil {
+				t.Fatalf("Expected entry %d to have RegistroAnterior, got nil", i+1)
+			}
+			if entry.Alta.Encadenamiento.RegistroAnterior.Huella != previousEntry.Huella {
+				t.Fatalf("Expected entry %d to have correct RegistroAnterior, got incorrect", i+1)
+			}
+		}
+
+		previousEntry = entry
 	}
 
 }
