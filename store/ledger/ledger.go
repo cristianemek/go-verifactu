@@ -176,25 +176,42 @@ func leerEntradasDesdeArchivo(dir string) ([]*verifactu.Entry, error) {
 	}
 	defer file.Close()
 
+	fileInfo, err := file.Stat()
+	if err != nil {
+		return nil, err
+	}
+
+	size := fileInfo.Size()
+
+	var bytesCount int64 = 0
+
 	var entries []*verifactu.Entry
 	scanner := bufio.NewScanner(file)
 	scanner.Buffer(make([]byte, 0, 64*1024), 10*1024*1024)
 
 	var lineNumber int
 	for scanner.Scan() {
+		scannerBytes := scanner.Bytes()
 
-		if len(scanner.Bytes()) == 0 {
+		bytesCount += int64(len(scannerBytes)) + 1
+
+		if bytesCount > size {
+			break
+		}
+
+		lineNumber++
+
+		if len(scannerBytes) == 0 {
 			continue
 		}
 
 		var entry verifactu.Entry
 
-		if err := json.Unmarshal(scanner.Bytes(), &entry); err != nil {
+		if err := json.Unmarshal(scannerBytes, &entry); err != nil {
 			return nil, fmt.Errorf("error unmarshalling entry on line %d: %w", lineNumber, err)
 		}
 		entries = append(entries, &entry)
 
-		lineNumber++
 	}
 
 	if err := scanner.Err(); err != nil {
