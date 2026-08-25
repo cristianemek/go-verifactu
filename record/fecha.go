@@ -3,6 +3,7 @@ package record
 import (
 	"encoding/json"
 	"encoding/xml"
+	"strings"
 	"time"
 )
 
@@ -68,6 +69,39 @@ func (f *FechaHora) UnmarshalJSON(b []byte) error {
 		return err
 	}
 
+	*f = FechaHora(t)
+	return nil
+}
+
+func (f *Fecha) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
+	var s string
+	err := d.DecodeElement(&s, &start)
+	if err != nil {
+		return err
+	}
+
+	s = strings.TrimSpace(s)
+
+	t, err := time.Parse(fechaFormat, s)
+	if err != nil {
+		return err
+	}
+
+	*f = Fecha(t)
+	return nil
+}
+
+func (f *FechaHora) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
+	var s string
+	err := d.DecodeElement(&s, &start)
+	if err != nil {
+		return err
+	}
+	s = strings.TrimSpace(s)
+	t, err := time.Parse(time.RFC3339, s)
+	if err != nil {
+		return err
+	}
 	*f = FechaHora(t)
 	return nil
 }

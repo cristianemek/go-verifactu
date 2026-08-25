@@ -132,3 +132,69 @@ func TestFechaHoraJson(t *testing.T) {
 		t.Fatalf("Expected error for invalid JSON, got nil")
 	}
 }
+
+func TestFechaXML(t *testing.T) {
+	fecha := Fecha(time.Date(2024, 1, 1, 0, 30, 0, 0, time.FixedZone("CET", 3600)))
+
+	xmlData, err := xml.Marshal(fecha)
+	if err != nil {
+		t.Fatalf("Fecha.MarshalXML returned error: %v", err)
+	}
+
+	if string(xmlData) != `<Fecha>01-01-2024</Fecha>` {
+		t.Errorf("Fecha.MarshalXML() = %q, want %q", string(xmlData), `<Fecha>01-01-2024</Fecha>`)
+	}
+
+	fecha2 := Fecha{}
+	validXML := `<Fecha>01-01-2024</Fecha>`
+
+	err = xml.Unmarshal([]byte(validXML), &fecha2)
+
+	if err != nil {
+		t.Fatalf("UnmarshalXML returned error: %v", err)
+	}
+
+	if fecha2.Format() != "01-01-2024" {
+		t.Errorf("UnmarshalXML() = %q, want %q", fecha2.Format(), "01-01-2024")
+	}
+
+	invalidXML := `<Fecha>not-a-date</Fecha>`
+	err = xml.Unmarshal([]byte(invalidXML), &fecha2)
+	if err == nil {
+		t.Fatalf("Expected error for invalid XML, got nil")
+	}
+
+}
+
+func TestFechaHoraXML(t *testing.T) {
+	fechaHora := FechaHora(time.Date(2024, 1, 1, 0, 30, 0, 0, time.FixedZone("CET", 3600)))
+
+	xmlData, err := xml.Marshal(fechaHora)
+	if err != nil {
+		t.Fatalf("FechaHora.MarshalXML returned error: %v", err)
+	}
+
+	if string(xmlData) != `<FechaHora>2024-01-01T00:30:00+01:00</FechaHora>` {
+		t.Errorf("FechaHora.MarshalXML() = %q, want %q", string(xmlData), `<FechaHora>2024-01-01T00:30:00+01:00</FechaHora>`)
+	}
+
+	fechaHora2 := FechaHora{}
+	validXML := `<FechaHora>2024-01-01T00:30:00+01:00</FechaHora>`
+
+	err = xml.Unmarshal([]byte(validXML), &fechaHora2)
+
+	if err != nil {
+		t.Fatalf("UnmarshalXML returned error: %v", err)
+	}
+
+	if fechaHora2.Format() != "2024-01-01T00:30:00+01:00" {
+		t.Errorf("UnmarshalXML() = %q, want %q", fechaHora2.Format(), "2024-01-01T00:30:00+01:00")
+	}
+
+	invalidXML := `<FechaHora>not-a-date</FechaHora>`
+	err = xml.Unmarshal([]byte(invalidXML), &fechaHora2)
+	if err == nil {
+		t.Fatalf("Expected error for invalid XML, got nil")
+	}
+
+}
