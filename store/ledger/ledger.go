@@ -13,7 +13,17 @@ import (
 	"github.com/cristianemek/go-verifactu"
 )
 
-// Store is a ledger-based implementation of the verifactu.Store interface.
+// Store keeps one append-only JSONL file per tenant inside a directory, with a
+// single entry per line. New rebuilds the in-memory index from disk, so a chain
+// survives a restart.
+//
+// This adapter requires both Tenant fields to be non-empty and uppercase
+// alphanumeric ASCII, because together they become the file name. Anything else
+// returns ErrTenantInvalido, which is what keeps a crafted NIF from writing
+// outside the directory.
+//
+// Only Anexar enforces that: Ultimo and Buscar answer from the index, so an
+// invalid tenant gets ErrNoEncontrado from them rather than ErrTenantInvalido.
 type Store struct {
 	dir     string
 	mu      sync.RWMutex

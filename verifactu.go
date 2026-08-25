@@ -122,8 +122,16 @@ func (e *Engine) siguienteCadena(ctx context.Context, t Tenant) (uint64, record.
 
 }
 
-// Engine overwrites the following fields of the record you pass to it, without prompting:
-// - Encadenamiento, FechaHoraHusoGenRegistro, Huella, TipoHuella, IDVersion
+// Alta records an issued invoice: it assigns the sequence number, builds the
+// chain link, fixes the generation timestamp and persists the entry.
+//
+// It is idempotent. Calling it again with the same IDFactura returns the entry
+// that already exists instead of creating a second one, and does not consume a
+// sequence number.
+//
+// The Engine overwrites these fields of the record you pass, without prompting:
+// Encadenamiento, FechaHoraHusoGenRegistro, IDVersion, TipoHuella and Huella.
+// The record is taken by value, so the caller's copy is left untouched.
 func (e *Engine) Alta(ctx context.Context, t Tenant, r record.RegistroAlta) (*Entry, error) {
 	release := e.lock(t)
 	defer release()
@@ -176,8 +184,18 @@ func (e *Engine) Alta(ctx context.Context, t Tenant, r record.RegistroAlta) (*En
 	return &entry, nil
 }
 
-// Engine overwrites the following fields of the record you pass to it, without prompting:
-// - Encadenamiento, FechaHoraHusoGenRegistro, Huella, TipoHuella, IDVersion
+// Anular records the cancellation of a previously issued invoice. It follows
+// the same algorithm as Alta: it consumes a sequence number and links to the
+// previous entry in the chain, whatever its type, and it is idempotent.
+//
+// Cancellation records are rarely the right tool. To undo an invoice the usual
+// path is issuing a corrective invoice and recording it with Alta, which keeps
+// both documents in the chain. Reach for Anular only when the invoice must not
+// stand at all.
+//
+// The Engine overwrites these fields of the record you pass, without prompting:
+// Encadenamiento, FechaHoraHusoGenRegistro, IDVersion, TipoHuella and Huella.
+// The record is taken by value, so the caller's copy is left untouched.
 func (e *Engine) Anular(ctx context.Context, t Tenant, r record.RegistroAnulacion) (*Entry, error) {
 	release := e.lock(t)
 	defer release()

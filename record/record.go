@@ -144,7 +144,7 @@ type RegistroAlta struct {
 
 // RegistroAnulacion cancels a previously registered invoice.
 type RegistroAnulacion struct {
-	XMLName xml.Name `xml:"https://www2.agenciatributaria.gob.es/static_files/common/internet/dep/aplicaciones/es/aeat/tike/cont/ws/SuministroInformacion.xsd RegistroAnulacion"`
+	XMLName xml.Name `xml:"https://www2.agenciatributaria.gob.es/static_files/common/internet/dep/aplicaciones/es/aeat/tike/cont/ws/SuministroInformacion.xsd RegistroAnulacion" json:"-"`
 
 	IDVersion         string                  `xml:"IDVersion"`
 	IDFactura         IDFacturaExpedidaBaja   `xml:"IDFactura"`
