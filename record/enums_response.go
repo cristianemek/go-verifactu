@@ -1,12 +1,12 @@
 package record
 
-// EstadoRegistroSF is the state of a record stored at the AEAT.
-type EstadoRegistroSF string
+// EstadoRegistroAlmacenado is the state of a record stored at the AEAT only inside of RegistroDuplicado.
+type EstadoRegistroAlmacenado string
 
 const (
-	EstadoRegistroSFCorrecta           EstadoRegistroSF = "Correcta"
-	EstadoRegistroSFAceptadaConErrores EstadoRegistroSF = "AceptadaConErrores"
-	EstadoRegistroSFAnulada            EstadoRegistroSF = "Anulada"
+	EstadoRegistroAlmacenadoCorrecta           EstadoRegistroAlmacenado = "Correcta"
+	EstadoRegistroAlmacenadoAceptadaConErrores EstadoRegistroAlmacenado = "AceptadaConErrores"
+	EstadoRegistroAlmacenadoAnulada            EstadoRegistroAlmacenado = "Anulada"
 )
 
 // TipoOperacion is the operation the AEAT reports having performed.
@@ -41,4 +41,22 @@ type IndicadorRepresentante string
 
 const (
 	IndicadorRepresentanteSi IndicadorRepresentante = "S"
+)
+
+// EstadoEnvio it is the global state of the submission.
+type EstadoEnvio string
+
+const (
+	EstadoEnvioCorrecto             EstadoEnvio = "Correcto"
+	EstadoEnvioParcialmenteCorrecto EstadoEnvio = "ParcialmenteCorrecto"
+	EstadoEnvioIncorrecto           EstadoEnvio = "Incorrecto"
+)
+
+// EstadoRegistro is the state of a record of the response.
+type EstadoRegistro string
+
+const (
+	EstadoRegistroCorrecto           EstadoRegistro = "Correcto"
+	EstadoRegistroAceptadoConErrores EstadoRegistro = "AceptadoConErrores"
+	EstadoRegistroIncorrecto         EstadoRegistro = "Incorrecto"
 )
