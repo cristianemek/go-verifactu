@@ -122,7 +122,14 @@ type RechazoPrevio string
 const (
 	RechazoPrevioNo RechazoPrevio = "N"
 	RechazoPrevioSi RechazoPrevio = "S"
-	// The record does not exist at the AEAT at all. Not allowed on registration.
+	// RechazoPrevioNoExiste marks a registration record sent after a previous
+	// one for the same invoice was rejected, so it never reached the AEAT. It
+	// travels together with Subsanacion = "S". See section 9.1.3 of the AEAT
+	// web services document.
+	//
+	// Note the asymmetry: a registration uses "X" here, while a cancellation
+	// after a rejection uses "S" on RechazoPrevioAnulacion, because in that
+	// case the record does exist at the AEAT.
 	RechazoPrevioNoExiste RechazoPrevio = "X"
 )
 
