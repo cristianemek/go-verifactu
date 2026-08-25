@@ -36,6 +36,11 @@ go.work.sum
 *.sqlite
 *.sqlite3
 
+# Documentación oficial de la AEAT.
+# Fuera del repositorio a propósito, las versiones usadas y de dónde bajarlos están en docs/aeat/README.md.
+# El catálogo de errores (errores.properties) SÍ se versiona: son 25 KB y de él se genera código.
+docs/aeat/*.pdf
+
 # Entorno
 .env
 .env.*
