@@ -50,8 +50,7 @@ type Entry struct {
 	// Huella is copied from the record, so lookups skip the pointer.
 	Huella    string
 	IDFactura IDFactura
-	// Correccion means this entry deliberately shares its key with an earlier
-	// one. The Store allows at most one non-correction entry per key.
+	// Correccion means the entry shares its key with an earlier one on purpose.
 	Correccion bool
 }
 
@@ -128,14 +127,18 @@ func (e *Engine) siguienteCadena(ctx context.Context, t Tenant) (uint64, record.
 // Alta records an issued invoice: it assigns the sequence number, builds the
 // chain link, fixes the generation timestamp and persists the entry.
 //
-// It is idempotent. Calling it again with the same IDFactura returns the entry
-// that already exists instead of creating a second one, and does not consume a
-// sequence number.
+// It is idempotent: calling it again with the same IDFactura returns the entry
+// that already exists. ComoSubsanacion and TrasRechazo turn that off, so the
+// call appends a correction sharing the same key.
 //
-// The Engine overwrites these fields of the record you pass, without prompting:
-// Encadenamiento, FechaHoraHusoGenRegistro, IDVersion, TipoHuella and Huella.
-// The record is taken by value, so the caller's copy is left untouched.
-func (e *Engine) Alta(ctx context.Context, t Tenant, r record.RegistroAlta) (*Entry, error) {
+// The Engine overwrites these fields of the record you pass: Encadenamiento,
+// FechaHoraHusoGenRegistro, IDVersion, TipoHuella, Huella, and with options
+// Subsanacion and RechazoPrevio. The record is taken by value.
+func (e *Engine) Alta(ctx context.Context, t Tenant, r record.RegistroAlta, opciones ...OpcionRegistro) (*Entry, error) {
+	opts := aplicarOpcionesRegistro(opciones...)
+
+	esCorreccion := opts.esSubsanacion || opts.esTrasRechazo
+
 	release := e.lock(t)
 	defer release()
 
@@ -145,14 +148,17 @@ func (e *Engine) Alta(ctx context.Context, t Tenant, r record.RegistroAlta) (*En
 		Fecha:    r.IDFactura.FechaExpedicionFactura,
 	}
 
-	got, err := e.store.Buscar(ctx, t, id, OperacionAlta)
+	if !esCorreccion {
+		got, err := e.store.Buscar(ctx, t, id, OperacionAlta)
 
-	if err != nil && !errors.Is(err, ErrNoEncontrado) {
-		return nil, err
-	}
+		if err != nil && !errors.Is(err, ErrNoEncontrado) {
+			return nil, err
+		}
 
-	if err == nil {
-		return got, nil
+		if err == nil {
+			return got, nil
+		}
+
 	}
 
 	secuencia, encadenamiento, err := e.siguienteCadena(ctx, t)
@@ -163,6 +169,12 @@ func (e *Engine) Alta(ctx context.Context, t Tenant, r record.RegistroAlta) (*En
 
 	r.Encadenamiento = encadenamiento
 	r.FechaHoraHusoGenRegistro = record.FechaHora(e.now().Truncate(time.Second))
+	if esCorreccion {
+		if opts.esTrasRechazo {
+			r.RechazoPrevio = record.Ptr(record.RechazoPrevioNoExiste)
+		}
+		r.Subsanacion = record.Ptr(record.SiNoSi)
+	}
 
 	registroAlta, err := record.NewRegistroAlta(r)
 
@@ -171,12 +183,13 @@ func (e *Engine) Alta(ctx context.Context, t Tenant, r record.RegistroAlta) (*En
 	}
 
 	entry := Entry{
-		Operacion: OperacionAlta,
-		Alta:      &registroAlta,
-		Secuencia: secuencia,
-		Huella:    registroAlta.Huella,
-		IDFactura: id,
-		Anulacion: nil,
+		Operacion:  OperacionAlta,
+		Alta:       &registroAlta,
+		Secuencia:  secuencia,
+		Huella:     registroAlta.Huella,
+		IDFactura:  id,
+		Anulacion:  nil,
+		Correccion: esCorreccion,
 	}
 
 	err = e.store.Anexar(ctx, t, &entry)
