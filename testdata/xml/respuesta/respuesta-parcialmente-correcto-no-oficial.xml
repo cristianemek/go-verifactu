@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- esta construido a mano contra el xsd de AEAT, no es un xml oficial.
+va a ser sustituido por uno oficial cuando lo obtenga.
+
+Envio con dos registros: el primero aceptado y el segundo aceptado con
+errores (codigo 2000, huella incorrecta). Un solo registro con error
+admisible ya hace que el estado global sea ParcialmenteCorrecto. -->
+<sfR:RespuestaRegFactuSistemaFacturacion
+  xmlns:sfR="https://www2.agenciatributaria.gob.es/static_files/common/internet/dep/aplicaciones/es/aeat/tike/cont/ws/RespuestaSuministro.xsd"
+  xmlns:sf="https://www2.agenciatributaria.gob.es/static_files/common/internet/dep/aplicaciones/es/aeat/tike/cont/ws/SuministroInformacion.xsd">
+  <sfR:CSV>B2C3D4E5F6G7H8I9</sfR:CSV>
+  <sfR:DatosPresentacion>
+    <sf:NIFPresentador>89890001K</sf:NIFPresentador>
+    <sf:TimestampPresentacion>2024-01-01T19:20:30+01:00</sf:TimestampPresentacion>
+  </sfR:DatosPresentacion>
+  <sfR:Cabecera>
+    <sf:ObligadoEmision>
+      <sf:NombreRazon>EMPRESA DE PRUEBAS SL</sf:NombreRazon>
+      <sf:NIF>89890001K</sf:NIF>
+    </sf:ObligadoEmision>
+  </sfR:Cabecera>
+  <sfR:TiempoEsperaEnvio>60</sfR:TiempoEsperaEnvio>
+  <sfR:EstadoEnvio>ParcialmenteCorrecto</sfR:EstadoEnvio>
+  <sfR:RespuestaLinea>
+    <sfR:IDFactura>
+      <sf:IDEmisorFactura>89890001K</sf:IDEmisorFactura>
+      <sf:NumSerieFactura>001</sf:NumSerieFactura>
+      <sf:FechaExpedicionFactura>01-01-2024</sf:FechaExpedicionFactura>
+    </sfR:IDFactura>
+    <sfR:Operacion>
+      <sf:TipoOperacion>Alta</sf:TipoOperacion>
+    </sfR:Operacion>
+    <sfR:EstadoRegistro>Correcto</sfR:EstadoRegistro>
+  </sfR:RespuestaLinea>
+  <sfR:RespuestaLinea>
+    <sfR:IDFactura>
+      <sf:IDEmisorFactura>89890001K</sf:IDEmisorFactura>
+      <sf:NumSerieFactura>002</sf:NumSerieFactura>
+      <sf:FechaExpedicionFactura>01-01-2024</sf:FechaExpedicionFactura>
+    </sfR:IDFactura>
+    <sfR:Operacion>
+      <sf:TipoOperacion>Alta</sf:TipoOperacion>
+    </sfR:Operacion>
+    <sfR:RefExterna>PEDIDO-4711</sfR:RefExterna>
+    <sfR:EstadoRegistro>AceptadoConErrores</sfR:EstadoRegistro>
+    <sfR:CodigoErrorRegistro>2000</sfR:CodigoErrorRegistro>
+    <sfR:DescripcionErrorRegistro>El cálculo de la huella suministrada es incorrecta.</sfR:DescripcionErrorRegistro>
+  </sfR:RespuestaLinea>
+</sfR:RespuestaRegFactuSistemaFacturacion>

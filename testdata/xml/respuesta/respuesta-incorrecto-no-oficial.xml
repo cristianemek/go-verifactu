@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- esta construido a mano contra el xsd de AEAT, no es un xml oficial.
+va a ser sustituido por uno oficial cuando lo obtenga.
+
+Rechazo completo: el unico registro del envio se rechaza con un error no
+admisible (1106, TipoFactura fuera de la lista). Al rechazarse todos los
+registros no hay CSV ni DatosPresentacion. -->
+<sfR:RespuestaRegFactuSistemaFacturacion
+  xmlns:sfR="https://www2.agenciatributaria.gob.es/static_files/common/internet/dep/aplicaciones/es/aeat/tike/cont/ws/RespuestaSuministro.xsd"
+  xmlns:sf="https://www2.agenciatributaria.gob.es/static_files/common/internet/dep/aplicaciones/es/aeat/tike/cont/ws/SuministroInformacion.xsd">
+  <sfR:Cabecera>
+    <sf:ObligadoEmision>
+      <sf:NombreRazon>EMPRESA DE PRUEBAS SL</sf:NombreRazon>
+      <sf:NIF>89890001K</sf:NIF>
+    </sf:ObligadoEmision>
+  </sfR:Cabecera>
+  <sfR:TiempoEsperaEnvio>60</sfR:TiempoEsperaEnvio>
+  <sfR:EstadoEnvio>Incorrecto</sfR:EstadoEnvio>
+  <sfR:RespuestaLinea>
+    <sfR:IDFactura>
+      <sf:IDEmisorFactura>89890001K</sf:IDEmisorFactura>
+      <sf:NumSerieFactura>003</sf:NumSerieFactura>
+      <sf:FechaExpedicionFactura>01-01-2024</sf:FechaExpedicionFactura>
+    </sfR:IDFactura>
+    <sfR:Operacion>
+      <sf:TipoOperacion>Alta</sf:TipoOperacion>
+    </sfR:Operacion>
+    <sfR:EstadoRegistro>Incorrecto</sfR:EstadoRegistro>
+    <sfR:CodigoErrorRegistro>1106</sfR:CodigoErrorRegistro>
+    <sfR:DescripcionErrorRegistro>El valor del campo TipoFactura no está incluido en la lista de valores permitidos.</sfR:DescripcionErrorRegistro>
+  </sfR:RespuestaLinea>
+</sfR:RespuestaRegFactuSistemaFacturacion>

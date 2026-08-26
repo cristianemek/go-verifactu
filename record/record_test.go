@@ -116,7 +116,7 @@ func TestRegistroAltaMatchesReferenceXML(t *testing.T) {
 		t.Fatalf("xml.MarshalIndent returned error: %v", err)
 	}
 
-	expected, err := os.ReadFile("../testdata/xml/registro_alta.xml")
+	expected, err := os.ReadFile("../testdata/xml/peticion/registro_alta.xml")
 	if err != nil {
 		t.Fatalf("Error reading expected XML file: %v", err)
 	}
