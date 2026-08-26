@@ -58,9 +58,11 @@ func (s *Store) Anexar(ctx context.Context, t verifactu.Tenant, e *verifactu.Ent
 		return verifactu.ErrCadenaBifurcada
 	}
 
-	for _, c := range cadena {
-		if c.Matches(e.IDFactura, e.Operacion) {
-			return verifactu.ErrDuplicado
+	if !e.Correccion {
+		for _, c := range cadena {
+			if c.Matches(e.IDFactura, e.Operacion) {
+				return verifactu.ErrDuplicado
+			}
 		}
 	}
 

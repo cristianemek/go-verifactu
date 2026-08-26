@@ -50,6 +50,9 @@ type Entry struct {
 	// Huella is copied from the record, so lookups skip the pointer.
 	Huella    string
 	IDFactura IDFactura
+	// Correccion means this entry deliberately shares its key with an earlier
+	// one. The Store allows at most one non-correction entry per key.
+	Correccion bool
 }
 
 // The id of an Entry is the IDFactura and the Operacion. Two entries with the same IDFactura and Operacion refer to the same invoice.

@@ -224,3 +224,39 @@ func TestBusquedas(t *testing.T) {
 		t.Fatalf("Buscar() = %v, want %v", err, verifactu.ErrNoEncontrado)
 	}
 }
+
+func TestCorrecion(t *testing.T) {
+	s := New()
+
+	tenant := buildTenant("89890001K")
+
+	entry := buildEntry(1, "12345678/G33", verifactu.OperacionAlta)
+
+	err := s.Anexar(context.Background(), tenant, entry)
+
+	if err != nil {
+		t.Fatalf("Anexar() = %v, want nil", err)
+	}
+
+	entryCorregido := buildEntry(2, "12345678/G33", verifactu.OperacionAlta)
+	entryCorregido.Correccion = true
+
+	err = s.Anexar(context.Background(), tenant, entryCorregido)
+
+	if err != nil {
+		t.Fatalf("Anexar() = %v, want nil", err)
+	}
+
+	lastEntry, err := s.Ultimo(context.Background(), tenant)
+	if err != nil {
+		t.Fatalf("Ultimo() = %v, want nil", err)
+	}
+
+	if lastEntry.Secuencia != entryCorregido.Secuencia {
+		t.Errorf("Ultimo() = %v, want %v", lastEntry.Secuencia, entryCorregido.Secuencia)
+	}
+
+	if lastEntry.Correccion != true {
+		t.Errorf("Ultimo() = %v, want true", lastEntry.Correccion)
+	}
+}
