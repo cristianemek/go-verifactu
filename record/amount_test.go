@@ -222,3 +222,107 @@ func TestPorcentajeMarshalXML(t *testing.T) {
 	}
 
 }
+
+func TestAmount_UnmarshalXML(t *testing.T) {
+	AmountToSerialize := Amount(1234)
+	xmlEnc, err := xml.Marshal(AmountToSerialize)
+	if err != nil {
+		t.Fatalf("Amount.MarshalXML returned error: %v", err)
+	}
+
+	deserializedAmount := Amount(0)
+	err = xml.Unmarshal(xmlEnc, &deserializedAmount)
+	if err != nil {
+		t.Fatalf("Amount.UnmarshalXML returned error: %v", err)
+	}
+
+	if deserializedAmount != AmountToSerialize {
+		t.Errorf("Amount.UnmarshalXML() = %d, want %d", deserializedAmount, AmountToSerialize)
+	}
+
+	testCases := []struct {
+		input   string
+		want    Amount
+		wantErr error
+	}{
+		{"12.34", 1234, nil},
+		{"0.00", 0, nil},
+		{"0.50", 50, nil},
+		{"as", 0, ErrInvalidAmount},
+	}
+
+	for _, tt := range testCases {
+		t.Run(tt.input, func(t *testing.T) {
+			var a Amount
+			err := xml.Unmarshal([]byte("<Amount>"+tt.input+"</Amount>"), &a)
+			if tt.wantErr != nil {
+				if err == nil {
+					t.Fatalf("Amount.UnmarshalXML(%q) expected error %v, got nil", tt.input, tt.wantErr)
+				}
+				if !errors.Is(err, tt.wantErr) {
+					t.Fatalf("Amount.UnmarshalXML(%q) expected error %v, got %v", tt.input, tt.wantErr, err)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("Amount.UnmarshalXML(%q) unexpected error: %v", tt.input, err)
+			}
+			if a != tt.want {
+				t.Errorf("Amount.UnmarshalXML(%q) = %d, want %d", tt.input, a, tt.want)
+			}
+		})
+	}
+
+}
+
+func TestPorcentaje_UnmarshalXML(t *testing.T) {
+	PorcentajeToSerialize := Porcentaje(1234)
+	xmlEnc, err := xml.Marshal(PorcentajeToSerialize)
+	if err != nil {
+		t.Fatalf("Porcentaje.MarshalXML returned error: %v", err)
+	}
+
+	deserializedAmount := Porcentaje(0)
+	err = xml.Unmarshal(xmlEnc, &deserializedAmount)
+	if err != nil {
+		t.Fatalf("Porcentaje.UnmarshalXML returned error: %v", err)
+	}
+
+	if deserializedAmount != PorcentajeToSerialize {
+		t.Errorf("Porcentaje.UnmarshalXML() = %d, want %d", deserializedAmount, PorcentajeToSerialize)
+	}
+
+	testCases := []struct {
+		input   string
+		want    Porcentaje
+		wantErr error
+	}{
+		{"12.34", 1234, nil},
+		{"0.00", 0, nil},
+		{"0.50", 50, nil},
+		{"as", 0, ErrInvalidPorcentaje},
+	}
+
+	for _, tt := range testCases {
+		t.Run(tt.input, func(t *testing.T) {
+			var a Porcentaje
+			err := xml.Unmarshal([]byte("<Porcentaje>"+tt.input+"</Porcentaje>"), &a)
+			if tt.wantErr != nil {
+				if err == nil {
+					t.Fatalf("Porcentaje.UnmarshalXML(%q) expected error %v, got nil", tt.input, tt.wantErr)
+				}
+				if !errors.Is(err, tt.wantErr) {
+					t.Fatalf("Porcentaje.UnmarshalXML(%q) expected error %v, got %v", tt.input, tt.wantErr, err)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("Porcentaje.UnmarshalXML(%q) unexpected error: %v", tt.input, err)
+			}
+			if a != tt.want {
+				t.Errorf("Porcentaje.UnmarshalXML(%q) = %d, want %d", tt.input, a, tt.want)
+			}
+		})
+	}
+
+}

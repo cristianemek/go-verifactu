@@ -117,6 +117,22 @@ func (a Amount) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 	return e.EncodeElement(a.Format(), start)
 }
 
+func (a *Amount) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
+	var content string
+	err := d.DecodeElement(&content, &start)
+	if err != nil {
+		return err
+	}
+
+	parsed, err := ParseAmount(content)
+	if err != nil {
+		return err
+	}
+
+	*a = parsed
+	return nil
+}
+
 func ParsePorcentaje(s string) (Porcentaje, error) {
 	porcentaje, err := ParseAmount(s)
 
@@ -158,4 +174,20 @@ func (p Porcentaje) Format() string {
 
 func (p Porcentaje) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 	return e.EncodeElement(p.Format(), start)
+}
+
+func (a *Porcentaje) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
+	var content string
+	err := d.DecodeElement(&content, &start)
+	if err != nil {
+		return err
+	}
+
+	parsed, err := ParsePorcentaje(content)
+	if err != nil {
+		return err
+	}
+
+	*a = Porcentaje(parsed)
+	return nil
 }
