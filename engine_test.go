@@ -509,3 +509,84 @@ func TestEntryJson(t *testing.T) {
 	}
 
 }
+
+func TestOpciones(t *testing.T) {
+	store := memory.New()
+	engine, err := verifactu.New(verifactu.Config{Store: store, Now: fixedTime})
+	if err != nil {
+		t.Fatalf("Error creating engine: %v", err)
+	}
+	tenant := verifactu.Tenant{NIF: "89890001K", IDSistemaInformatico: "01"}
+
+	entryAlta, err := engine.Alta(context.Background(), tenant, validRegistroAlta("001"))
+
+	if err != nil {
+		t.Fatalf("Error creating alta entry: %v", err)
+	}
+
+	entryAlta2, err := engine.Alta(context.Background(), tenant, validRegistroAlta("001"), verifactu.ComoSubsanacion())
+
+	if err != nil {
+		t.Fatalf("Error creating alta entry with options: %v", err)
+	}
+
+	if entryAlta2.Secuencia != 2 {
+		t.Fatalf("Expected sequence 2 for alta entry with options, got %d", entryAlta2.Secuencia)
+	}
+
+	if !entryAlta2.Correccion {
+		t.Fatalf("Expected Correccion to be true for alta entry with options, got %v", entryAlta2.Correccion)
+	}
+
+	if entryAlta2.Alta.Subsanacion == nil {
+		t.Fatalf("Expected Subsanacion to be non-nil for alta entry with options, got nil")
+	}
+
+	if *entryAlta2.Alta.Subsanacion != record.SiNoSi {
+		t.Errorf("Expected Subsanacion to be SiNoSi for alta entry with options, got %v", *entryAlta2.Alta.Subsanacion)
+	}
+
+	if entryAlta2.Alta.RechazoPrevio != nil {
+		t.Fatalf("Expected RechazoPrevio to be nil for alta entry with options, got %v", entryAlta2.Alta.RechazoPrevio)
+	}
+
+	if entryAlta2.Alta.Encadenamiento.RegistroAnterior == nil || entryAlta2.Alta.Encadenamiento.RegistroAnterior.Huella != entryAlta.Huella {
+		t.Fatalf("Expected RegistroAnterior to be non-nil and match first entry Huella for alta entry with options, got %v", entryAlta2.Alta.Encadenamiento.RegistroAnterior)
+	}
+
+	last, err := store.Ultimo(context.Background(), tenant)
+	if err != nil {
+		t.Fatalf("Error retrieving last entry: %v", err)
+	}
+
+	if last.Secuencia != 2 {
+		t.Fatalf("Expected last entry to have sequence 2, got %d", last.Secuencia)
+	}
+
+	entryAlta3, err := engine.Alta(context.Background(), tenant, validRegistroAlta("001"), verifactu.TrasRechazo())
+
+	if err != nil {
+		t.Fatalf("Error creating alta entry with TrasRechazo option: %v", err)
+	}
+
+	if entryAlta3.Secuencia != 3 {
+		t.Fatalf("Expected sequence 3 for alta entry with TrasRechazo option, got %d", entryAlta3.Secuencia)
+	}
+
+	if entryAlta3.Alta.Subsanacion == nil {
+		t.Fatalf("Expected Subsanacion to be set for alta entry with TrasRechazo option, got nil")
+	}
+
+	if *entryAlta3.Alta.Subsanacion != record.SiNoSi {
+		t.Errorf("Expected Subsanacion to be SiNoSi for alta entry with TrasRechazo option, got %v", *entryAlta3.Alta.Subsanacion)
+	}
+
+	if entryAlta3.Alta.RechazoPrevio == nil {
+		t.Fatalf("Expected RechazoPrevio to be set for alta entry with TrasRechazo option, got nil")
+	}
+
+	if *entryAlta3.Alta.RechazoPrevio != record.RechazoPrevioNoExiste {
+		t.Errorf("Expected RechazoPrevio to be RechazoPrevioNoExiste for alta entry with TrasRechazo option, got %v", *entryAlta3.Alta.RechazoPrevio)
+	}
+
+}

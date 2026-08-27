@@ -200,19 +200,29 @@ func (e *Engine) Alta(ctx context.Context, t Tenant, r record.RegistroAlta, opci
 	return &entry, nil
 }
 
-// Anular records the cancellation of a previously issued invoice. It follows
-// the same algorithm as Alta: it consumes a sequence number and links to the
-// previous entry in the chain, whatever its type, and it is idempotent.
+// Anular records the cancellation of a previously issued invoice. Same algorithm
+// as Alta: it consumes a sequence number and links to the previous entry.
 //
 // Cancellation records are rarely the right tool. To undo an invoice the usual
-// path is issuing a corrective invoice and recording it with Alta, which keeps
-// both documents in the chain. Reach for Anular only when the invoice must not
-// stand at all.
+// path is a corrective invoice recorded with Alta, which keeps both documents in
+// the chain.
 //
-// The Engine overwrites these fields of the record you pass, without prompting:
-// Encadenamiento, FechaHoraHusoGenRegistro, IDVersion, TipoHuella and Huella.
-// The record is taken by value, so the caller's copy is left untouched.
-func (e *Engine) Anular(ctx context.Context, t Tenant, r record.RegistroAnulacion) (*Entry, error) {
+// It is idempotent unless TrasRechazo is passed. ComoSubsanacion does not apply
+// to a cancellation and returns ErrOpcionNoAplicable.
+//
+// The Engine overwrites these fields of the record you pass: Encadenamiento,
+// FechaHoraHusoGenRegistro, IDVersion, TipoHuella, Huella, and with TrasRechazo
+// RechazoPrevio. The record is taken by value.
+func (e *Engine) Anular(ctx context.Context, t Tenant, r record.RegistroAnulacion, opciones ...OpcionRegistro) (*Entry, error) {
+
+	opts := aplicarOpcionesRegistro(opciones...)
+
+	if opts.esSubsanacion {
+		return nil, ErrOpcionNoAplicable
+	}
+
+	esCorreccion := opts.esSubsanacion || opts.esTrasRechazo
+
 	release := e.lock(t)
 	defer release()
 
@@ -222,14 +232,17 @@ func (e *Engine) Anular(ctx context.Context, t Tenant, r record.RegistroAnulacio
 		Fecha:    r.IDFactura.FechaExpedicionFacturaAnulada,
 	}
 
-	got, err := e.store.Buscar(ctx, t, id, OperacionAnulacion)
+	if !esCorreccion {
+		got, err := e.store.Buscar(ctx, t, id, OperacionAnulacion)
 
-	if err != nil && !errors.Is(err, ErrNoEncontrado) {
-		return nil, err
-	}
+		if err != nil && !errors.Is(err, ErrNoEncontrado) {
+			return nil, err
+		}
 
-	if err == nil {
-		return got, nil
+		if err == nil {
+			return got, nil
+		}
+
 	}
 
 	secuencia, encadenamiento, err := e.siguienteCadena(ctx, t)
@@ -240,6 +253,11 @@ func (e *Engine) Anular(ctx context.Context, t Tenant, r record.RegistroAnulacio
 
 	r.Encadenamiento = encadenamiento
 	r.FechaHoraHusoGenRegistro = record.FechaHora(e.now().Truncate(time.Second))
+	if esCorreccion {
+		if opts.esTrasRechazo {
+			r.RechazoPrevio = record.Ptr(record.RechazoPrevioAnulacionSi)
+		}
+	}
 
 	registroAnulacion, err := record.NewRegistroAnulacion(r)
 	if err != nil {
@@ -247,12 +265,13 @@ func (e *Engine) Anular(ctx context.Context, t Tenant, r record.RegistroAnulacio
 	}
 
 	entry := Entry{
-		Operacion: OperacionAnulacion,
-		Alta:      nil,
-		Anulacion: &registroAnulacion,
-		Secuencia: secuencia,
-		Huella:    registroAnulacion.Huella,
-		IDFactura: id,
+		Operacion:  OperacionAnulacion,
+		Alta:       nil,
+		Anulacion:  &registroAnulacion,
+		Secuencia:  secuencia,
+		Huella:     registroAnulacion.Huella,
+		IDFactura:  id,
+		Correccion: esCorreccion,
 	}
 
 	err = e.store.Anexar(ctx, t, &entry)
