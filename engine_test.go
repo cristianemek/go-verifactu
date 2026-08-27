@@ -590,3 +590,62 @@ func TestOpciones(t *testing.T) {
 	}
 
 }
+
+func TestOpcionesAnulacion(t *testing.T) {
+	store := memory.New()
+	engine, err := verifactu.New(verifactu.Config{Store: store, Now: fixedTime})
+	if err != nil {
+		t.Fatalf("Error creating engine: %v", err)
+	}
+
+	tenant := verifactu.Tenant{NIF: "89890001K", IDSistemaInformatico: "01"}
+
+	entryAnulacion, err := engine.Anular(context.Background(), tenant, validRegistroAnulacion("001"))
+	if err != nil {
+		t.Fatalf("Error creating anulacion entry: %v", err)
+	}
+
+	if entryAnulacion.Secuencia != 1 {
+		t.Fatalf("Expected sequence 1 for anulacion entry, got %d", entryAnulacion.Secuencia)
+	}
+
+	entryAnulacion2, err := engine.Anular(context.Background(), tenant, validRegistroAnulacion("001"), verifactu.TrasRechazo())
+	if err != nil {
+		t.Fatalf("Error creating anulacion entry with options: %v", err)
+	}
+
+	if entryAnulacion2.Secuencia != 2 {
+		t.Fatalf("Expected sequence 2 for anulacion entry with options, got %d", entryAnulacion2.Secuencia)
+	}
+
+	if entryAnulacion2.Correccion != true {
+		t.Fatalf("Expected Correccion to be true for anulacion entry with options, got %v", entryAnulacion2.Correccion)
+	}
+
+	if entryAnulacion2.Anulacion.RechazoPrevio == nil {
+		t.Fatalf("Expected RechazoPrevio to not be nil for anulacion entry with options, got %v", entryAnulacion2.Anulacion.RechazoPrevio)
+	}
+
+	if *entryAnulacion2.Anulacion.RechazoPrevio != record.RechazoPrevioAnulacionSi {
+		t.Fatalf("Expected RechazoPrevio to be RechazoPrevioAnulacionSi for anulacion entry with options, got %v", *entryAnulacion2.Anulacion.RechazoPrevio)
+	}
+
+	entryAnulacion3, err := engine.Anular(context.Background(), tenant, validRegistroAnulacion("001"), verifactu.ComoSubsanacion())
+	if !errors.Is(err, verifactu.ErrOpcionNoAplicable) {
+		t.Fatalf("Expected ErrOpcionIncompatible for anulacion entry with incompatible options, got %v", err)
+	}
+
+	if entryAnulacion3 != nil {
+		t.Fatalf("Expected entry to be nil for anulacion entry with incompatible options, got %v", entryAnulacion3)
+	}
+
+	ultimo, err := store.Ultimo(context.Background(), tenant)
+	if err != nil {
+		t.Fatalf("Error retrieving last entry: %v", err)
+	}
+
+	if ultimo.Secuencia != 2 {
+		t.Fatalf("Expected last entry to have sequence 2, got %d", ultimo.Secuencia)
+	}
+
+}
