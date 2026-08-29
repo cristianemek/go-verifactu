@@ -62,6 +62,8 @@ func (e *Entry) Matches(idFactura IDFactura, op Operacion) bool {
 // Config holds the configuration for a new Engine.
 type Config struct {
 	Store Store
+	// Transport is optional. If nil, the Engine will not send records to the Verifactu service.
+	Transport Transport
 	// Now is optional. If nil, time.Now is used. It is useful for testing.
 	Now func() time.Time
 }
@@ -70,6 +72,7 @@ type Config struct {
 // concurrent altas cannot fork a chain.
 type Engine struct {
 	store       Store
+	transport   Transport
 	now         func() time.Time
 	mu          sync.Mutex
 	tenantLocks map[Tenant]*sync.Mutex
@@ -79,12 +82,14 @@ func New(cfg Config) (*Engine, error) {
 	if cfg.Store == nil {
 		return nil, ErrStoreRequerido
 	}
+
 	if cfg.Now == nil {
 		cfg.Now = time.Now
 	}
 	return &Engine{
 		store:       cfg.Store,
 		now:         cfg.Now,
+		transport:   cfg.Transport,
 		tenantLocks: make(map[Tenant]*sync.Mutex),
 	}, nil
 }
