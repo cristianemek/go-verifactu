@@ -23,6 +23,21 @@ func (s storeFalso) Buscar(ctx context.Context, t Tenant, id IDFactura, op Opera
 	return nil, ErrNoEncontrado
 }
 
+// AnexarEnvio implements [verifactu.Store].
+func (s storeFalso) AnexarEnvio(ctx context.Context, t Tenant, envio *Envio) error {
+	panic("unimplemented")
+}
+
+// Pendientes implements [verifactu.Store].
+func (s storeFalso) Pendientes(ctx context.Context, t Tenant, limite int) ([]*Entry, error) {
+	panic("unimplemented")
+}
+
+// UltimoEnvio implements [verifactu.Store].
+func (s storeFalso) UltimoEnvio(ctx context.Context, t Tenant) (*Envio, error) {
+	panic("unimplemented")
+}
+
 const (
 	goRoutines = 100
 )

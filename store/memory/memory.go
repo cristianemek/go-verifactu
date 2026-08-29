@@ -7,6 +7,8 @@ import (
 	"github.com/cristianemek/go-verifactu"
 )
 
+var _ verifactu.Store = (*Store)(nil)
+
 type Store struct {
 	mu      sync.RWMutex
 	cadenas map[verifactu.Tenant][]*verifactu.Entry
@@ -69,4 +71,19 @@ func (s *Store) Anexar(ctx context.Context, t verifactu.Tenant, e *verifactu.Ent
 	s.cadenas[t] = append(cadena, e)
 
 	return nil
+}
+
+// AnexarEnvio implements [verifactu.Store].
+func (s *Store) AnexarEnvio(ctx context.Context, t verifactu.Tenant, envio *verifactu.Envio) error {
+	panic("unimplemented")
+}
+
+// Pendientes implements [verifactu.Store].
+func (s *Store) Pendientes(ctx context.Context, t verifactu.Tenant, limite int) ([]*verifactu.Entry, error) {
+	panic("unimplemented")
+}
+
+// UltimoEnvio implements [verifactu.Store].
+func (s *Store) UltimoEnvio(ctx context.Context, t verifactu.Tenant) (*verifactu.Envio, error) {
+	panic("unimplemented")
 }

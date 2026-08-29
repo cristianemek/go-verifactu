@@ -7,6 +7,8 @@ import (
 	"github.com/cristianemek/go-verifactu/record"
 )
 
+var _ verifactu.Transport = (*transporteFalso)(nil)
+
 type transporteFalso struct {
 	respuesta record.RespuestaRegFactuSistemaFacturacion
 	err       error
@@ -22,5 +24,3 @@ func (tf *transporteFalso) Remitir(ctx context.Context, t verifactu.Tenant, lote
 	tf.ultimoTenant = t
 	return tf.respuesta, tf.err
 }
-
-var _ verifactu.Transport = (*transporteFalso)(nil)

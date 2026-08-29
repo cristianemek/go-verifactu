@@ -13,6 +13,8 @@ import (
 	"github.com/cristianemek/go-verifactu"
 )
 
+var _ verifactu.Store = (*Store)(nil)
+
 // Store keeps one append-only JSONL file per tenant inside a directory, with a
 // single entry per line. New rebuilds the in-memory index from disk, so a chain
 // survives a restart.
@@ -240,4 +242,19 @@ func cargarCadena(dir string) ([]*verifactu.Entry, error) {
 	}
 
 	return entries, nil
+}
+
+// AnexarEnvio implements [verifactu.Store].
+func (s *Store) AnexarEnvio(ctx context.Context, t verifactu.Tenant, envio *verifactu.Envio) error {
+	panic("unimplemented")
+}
+
+// Pendientes implements [verifactu.Store].
+func (s *Store) Pendientes(ctx context.Context, t verifactu.Tenant, limite int) ([]*verifactu.Entry, error) {
+	panic("unimplemented")
+}
+
+// UltimoEnvio implements [verifactu.Store].
+func (s *Store) UltimoEnvio(ctx context.Context, t verifactu.Tenant) (*verifactu.Envio, error) {
+	panic("unimplemented")
 }
