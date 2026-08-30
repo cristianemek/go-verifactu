@@ -12,8 +12,8 @@ type Envio struct {
 	NIFPresentador        string
 	TimestampPresentacion time.Time
 	EstadoEnvio           record.EstadoEnvio
-	TiempoEspera          time.Duration
 	Lineas                []LineaEnvio
+	TiempoEspera          time.Duration
 }
 
 type LineaEnvio struct {
@@ -23,10 +23,11 @@ type LineaEnvio struct {
 	CodigoError string
 	Descripcion string
 	Duplicado   *record.RegistroDuplicado
+	Secuencia   uint64
 }
 
 // Liquidada returns true if processed. AEAT keeps this record, so to fix it
 // you must send a "Subsanación" patch. Warning: it reuses the same invoice ID.
-func (e *LineaEnvio) Liquidada() bool {
+func (e LineaEnvio) Liquidada() bool {
 	return e.Estado == record.EstadoRegistroCorrecto || e.Estado == record.EstadoRegistroAceptadoConErrores
 }
