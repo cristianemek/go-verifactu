@@ -27,9 +27,11 @@ var _ verifactu.Store = (*Store)(nil)
 // Only Anexar enforces that: Ultimo and Buscar answer from the index, so an
 // invalid tenant gets ErrNoEncontrado from them rather than ErrTenantInvalido.
 type Store struct {
-	dir     string
-	mu      sync.RWMutex
-	cadenas map[verifactu.Tenant][]*verifactu.Entry
+	dir        string
+	mu         sync.RWMutex
+	cadenas    map[verifactu.Tenant][]*verifactu.Entry
+	envios     map[verifactu.Tenant][]*verifactu.Envio
+	liquidados map[verifactu.Tenant]map[uint64]bool
 }
 
 func New(dir string) (*Store, error) {
@@ -45,42 +47,87 @@ func New(dir string) (*Store, error) {
 	}
 
 	cadenas := make(map[verifactu.Tenant][]*verifactu.Entry)
+	envios := make(map[verifactu.Tenant][]*verifactu.Envio)
+	liquidados := make(map[verifactu.Tenant]map[uint64]bool)
 
 	for _, entry := range dirEntry {
+		nombre := entry.Name()
+
 		if entry.IsDir() {
 			continue
 		}
-		if filepath.Ext(entry.Name()) != ".jsonl" {
+		if filepath.Ext(nombre) != ".jsonl" {
 			continue
 		}
 
-		tenantName := strings.TrimSuffix(entry.Name(), ".jsonl")
-		parts := strings.SplitN(tenantName, "-", 2)
+		esEnvios := strings.HasSuffix(nombre, ".envios.jsonl")
 
-		if len(parts) != 2 || !alfanumerico(parts[0]) || !alfanumerico(parts[1]) {
-			return nil, fmt.Errorf("%w: invalid tenant file name '%s'", verifactu.ErrTenantInvalido, entry.Name())
+		var base string
 
+		if esEnvios {
+			base = strings.TrimSuffix(nombre, ".envios.jsonl")
+		} else {
+			base = strings.TrimSuffix(nombre, ".jsonl")
 		}
 
-		tenant := verifactu.Tenant{
-			NIF:                  parts[0],
-			IDSistemaInformatico: parts[1],
-		}
-
-		dirPath := filepath.Join(dir, entry.Name())
-
-		entries, err := cargarCadena(dirPath)
+		tenant, err := tenantDesdeNombre(base)
 		if err != nil {
-			return nil, fmt.Errorf("error reading file '%s': %w", dirPath, err)
+			return nil, err
 		}
-		cadenas[tenant] = entries
+
+		dirPath := filepath.Join(dir, nombre)
+
+		if esEnvios {
+			enviosEntries, err := cargarJSONL[verifactu.Envio](dirPath)
+			if err != nil {
+				return nil, fmt.Errorf("error reading file '%s': %w", dirPath, err)
+			}
+			envios[tenant] = enviosEntries
+
+			liquidados[tenant] = make(map[uint64]bool)
+			for _, envio := range enviosEntries {
+				marcarLiquidadas(liquidados[tenant], envio)
+			}
+
+		} else {
+			entries, err := cargarJSONL[verifactu.Entry](dirPath)
+			if err != nil {
+				return nil, fmt.Errorf("error reading file '%s': %w", dirPath, err)
+			}
+			cadenas[tenant] = entries
+		}
 	}
 
-	return &Store{dir: dir, cadenas: cadenas}, nil
-
+	return &Store{
+		dir:        dir,
+		cadenas:    cadenas,
+		envios:     envios,
+		liquidados: liquidados,
+	}, nil
 }
 
-func (s *Store) fichero(tenant verifactu.Tenant) (string, error) {
+func tenantDesdeNombre(base string) (verifactu.Tenant, error) {
+	parts := strings.SplitN(base, "-", 2)
+
+	if len(parts) != 2 || !alfanumerico(parts[0]) || !alfanumerico(parts[1]) {
+		return verifactu.Tenant{}, fmt.Errorf("%w: invalid tenant file name '%s'", verifactu.ErrTenantInvalido, base)
+	}
+
+	return verifactu.Tenant{
+		NIF:                  parts[0],
+		IDSistemaInformatico: parts[1],
+	}, nil
+}
+
+func marcarLiquidadas(dest map[uint64]bool, envio *verifactu.Envio) {
+	for _, linea := range envio.Lineas {
+		if linea.Liquidada() {
+			dest[linea.Secuencia] = true
+		}
+	}
+}
+
+func nombreBase(tenant verifactu.Tenant) (string, error) {
 
 	if !alfanumerico(tenant.NIF) {
 		return "", fmt.Errorf("%w: NIF '%s' must be uppercase alphanumeric", verifactu.ErrTenantInvalido, tenant.NIF)
@@ -90,9 +137,25 @@ func (s *Store) fichero(tenant verifactu.Tenant) (string, error) {
 		return "", fmt.Errorf("%w: IDsistemaInformatico '%s' must be uppercase alphanumeric", verifactu.ErrTenantInvalido, tenant.IDSistemaInformatico)
 	}
 
-	nombre := tenant.NIF + "-" + tenant.IDSistemaInformatico + ".jsonl"
+	return tenant.NIF + "-" + tenant.IDSistemaInformatico, nil
+}
 
-	return filepath.Join(s.dir, nombre), nil
+func (s *Store) fichero(tenant verifactu.Tenant) (string, error) {
+
+	base, err := nombreBase(tenant)
+	if err != nil {
+		return "", err
+	}
+
+	return filepath.Join(s.dir, base+".jsonl"), nil
+}
+
+func (s *Store) ficheroEnvios(t verifactu.Tenant) (string, error) {
+	base, err := nombreBase(t)
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(s.dir, base+".envios.jsonl"), nil
 }
 
 func alfanumerico(s string) bool {
@@ -184,7 +247,7 @@ func (s *Store) Anexar(ctx context.Context, t verifactu.Tenant, e *verifactu.Ent
 }
 
 // cargarCadena reads a JSONL file and returns a slice of Entry pointers. If the file ends with an incomplete line, it truncates the file to remove that line.
-func cargarCadena(dir string) ([]*verifactu.Entry, error) {
+func cargarJSONL[T any](dir string) ([]*T, error) {
 	file, err := os.Open(dir)
 	if err != nil {
 		return nil, err
@@ -201,7 +264,7 @@ func cargarCadena(dir string) ([]*verifactu.Entry, error) {
 	var bytesCount int64 = 0
 	var truncarA int64 = -1
 
-	var entries []*verifactu.Entry
+	var entries []*T
 	scanner := bufio.NewScanner(file)
 	scanner.Buffer(make([]byte, 0, 64*1024), 10*1024*1024)
 
@@ -222,10 +285,10 @@ func cargarCadena(dir string) ([]*verifactu.Entry, error) {
 			continue
 		}
 
-		var entry verifactu.Entry
+		var entry T
 
 		if err := json.Unmarshal(scannerBytes, &entry); err != nil {
-			return nil, fmt.Errorf("error unmarshalling entry on line %d: %w", lineNumber, err)
+			return nil, fmt.Errorf("error unmarshalling on line %d: %w", lineNumber, err)
 		}
 		entries = append(entries, &entry)
 
@@ -246,15 +309,80 @@ func cargarCadena(dir string) ([]*verifactu.Entry, error) {
 
 // AnexarEnvio implements [verifactu.Store].
 func (s *Store) AnexarEnvio(ctx context.Context, t verifactu.Tenant, envio *verifactu.Envio) error {
-	panic("unimplemented")
+	dir, err := s.ficheroEnvios(t)
+	if err != nil {
+		return err
+	}
+
+	s.mu.Lock()
+
+	defer s.mu.Unlock()
+
+	jsonData, err := json.Marshal(envio)
+	if err != nil {
+		return err
+	}
+
+	file, err := os.OpenFile(dir, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	if _, err := file.Write(append(jsonData, '\n')); err != nil {
+		return err
+	}
+
+	if err := file.Sync(); err != nil {
+		return err
+	}
+
+	s.envios[t] = append(s.envios[t], envio)
+
+	if s.liquidados[t] == nil {
+		s.liquidados[t] = make(map[uint64]bool)
+	}
+	marcarLiquidadas(s.liquidados[t], envio)
+
+	return nil
 }
 
 // Pendientes implements [verifactu.Store].
 func (s *Store) Pendientes(ctx context.Context, t verifactu.Tenant, limite int) ([]*verifactu.Entry, error) {
-	panic("unimplemented")
+	s.mu.RLock()
+
+	defer s.mu.RUnlock()
+
+	cadena := s.cadenas[t]
+
+	liquidados := s.liquidados[t]
+
+	var pendientes []*verifactu.Entry
+
+	for _, e := range cadena {
+		if !liquidados[e.Secuencia] {
+			pendientes = append(pendientes, e)
+
+			if limite > 0 && len(pendientes) >= limite {
+				break
+			}
+		}
+	}
+
+	return pendientes, nil
 }
 
 // UltimoEnvio implements [verifactu.Store].
 func (s *Store) UltimoEnvio(ctx context.Context, t verifactu.Tenant) (*verifactu.Envio, error) {
-	panic("unimplemented")
+	s.mu.RLock()
+
+	defer s.mu.RUnlock()
+
+	envios := s.envios[t]
+
+	if len(envios) == 0 {
+		return nil, verifactu.ErrNoEncontrado
+	}
+
+	return envios[len(envios)-1], nil
 }
