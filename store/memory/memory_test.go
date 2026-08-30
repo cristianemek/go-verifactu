@@ -3,9 +3,11 @@ package memory
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/cristianemek/go-verifactu"
+	"github.com/cristianemek/go-verifactu/record"
 )
 
 func buildEntry(secuencia uint64, numeroSerie string, operacion verifactu.Operacion) *verifactu.Entry {
@@ -15,6 +17,23 @@ func buildEntry(secuencia uint64, numeroSerie string, operacion verifactu.Operac
 		IDFactura: verifactu.IDFactura{
 			NumSerie: numeroSerie,
 		},
+	}
+}
+
+func anexarCadena(t *testing.T, s *Store, tenant verifactu.Tenant, n int) {
+	t.Helper()
+	for i := 1; i <= n; i++ {
+		err := s.Anexar(context.Background(), tenant, buildEntry(uint64(i), fmt.Sprintf("12345678/G%d", i), verifactu.OperacionAlta))
+		if err != nil {
+			t.Fatalf("Anexar() = %v, want nil", err)
+		}
+	}
+}
+
+func buildLinea(secuencia uint64, estado record.EstadoRegistro) verifactu.LineaEnvio {
+	return verifactu.LineaEnvio{
+		Secuencia: secuencia,
+		Estado:    estado,
 	}
 }
 
@@ -258,5 +277,120 @@ func TestCorrecion(t *testing.T) {
 
 	if lastEntry.Correccion != true {
 		t.Errorf("Ultimo() = %v, want true", lastEntry.Correccion)
+	}
+}
+
+func TestUltimoEnvioVacio(t *testing.T) {
+	s := New()
+
+	tenant := buildTenant("89890001K")
+
+	_, err := s.UltimoEnvio(context.Background(), tenant)
+
+	if !errors.Is(err, verifactu.ErrNoEncontrado) {
+		t.Fatalf("Ultimo() = %v, want %v", err, verifactu.ErrNoEncontrado)
+	}
+}
+
+func TestPendientes(t *testing.T) {
+	testCases := []struct {
+		name   string
+		lineas []verifactu.LineaEnvio
+		limite int
+		want   []uint64
+	}{
+		{
+			name:   "Sin envio",
+			lineas: []verifactu.LineaEnvio{},
+			limite: 0,
+			want:   []uint64{1, 2, 3},
+		},
+		{
+			name: "Todas rechazadas",
+			lineas: []verifactu.LineaEnvio{
+				buildLinea(1, record.EstadoRegistroIncorrecto),
+				buildLinea(2, record.EstadoRegistroIncorrecto),
+				buildLinea(3, record.EstadoRegistroIncorrecto),
+			},
+			limite: 0,
+			want:   []uint64{1, 2, 3},
+		},
+		{
+			name: "Aceptada con errores liquida",
+			lineas: []verifactu.LineaEnvio{
+				buildLinea(1, record.EstadoRegistroAceptadoConErrores),
+				buildLinea(2, record.EstadoRegistroAceptadoConErrores),
+				buildLinea(3, record.EstadoRegistroAceptadoConErrores),
+			},
+			limite: 0,
+			want:   []uint64{},
+		},
+		{
+			name: "Todas correctas",
+			lineas: []verifactu.LineaEnvio{
+				buildLinea(1, record.EstadoRegistroCorrecto),
+				buildLinea(2, record.EstadoRegistroCorrecto),
+				buildLinea(3, record.EstadoRegistroCorrecto),
+			},
+			limite: 0,
+			want:   []uint64{},
+		},
+		{
+			name: "Hueco en el envio",
+			lineas: []verifactu.LineaEnvio{
+				buildLinea(2, record.EstadoRegistroCorrecto),
+			},
+			limite: 0,
+			want:   []uint64{1, 3},
+		},
+		{
+			name:   "El limite corta la lista",
+			lineas: []verifactu.LineaEnvio{},
+			limite: 2,
+			want:   []uint64{1, 2},
+		},
+		{
+			name:   "El limite mayor que la cadena",
+			lineas: []verifactu.LineaEnvio{},
+			limite: 10,
+			want:   []uint64{1, 2, 3},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			s := New()
+
+			tenant := buildTenant("89890001K")
+			anexarCadena(t, s, tenant, 3)
+
+			if len(tc.lineas) > 0 {
+
+				if len(tc.lineas) > 3 {
+					t.Fatalf("Test case %s has more lines than the chain", tc.name)
+				}
+				err := s.AnexarEnvio(context.Background(), tenant, &verifactu.Envio{
+					Lineas: tc.lineas,
+				})
+				if err != nil {
+					t.Fatalf("AnexarEnvio() = %v, want nil", err)
+				}
+			}
+
+			pendientes, err := s.Pendientes(context.Background(), tenant, tc.limite)
+			if err != nil {
+				t.Fatalf("Pendientes() = %v, want nil", err)
+			}
+
+			if len(pendientes) != len(tc.want) {
+				t.Fatalf("Pendientes() = %v, want %v", len(pendientes), len(tc.want))
+			}
+
+			for i, secuencia := range tc.want {
+				if pendientes[i].Secuencia != secuencia {
+					t.Errorf("Pendientes() = %v, want %v", pendientes[i].Secuencia, secuencia)
+				}
+			}
+		})
 	}
 }
