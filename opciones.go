@@ -33,3 +33,25 @@ func aplicarOpcionesRegistro(opciones ...OpcionRegistro) *opcionesRegistro {
 	}
 	return opts
 }
+
+type opcionesEnvio struct {
+	obligado string
+}
+
+// OpcionEnvio tweaks the header of a submission.
+type OpcionEnvio func(*opcionesEnvio)
+
+// ConObligado sets the taxpayer name. Without it, it is taken from the batch.
+func ConObligado(nombre string) OpcionEnvio {
+	return func(o *opcionesEnvio) {
+		o.obligado = nombre
+	}
+}
+
+func aplicarOpcionesEnvio(opciones ...OpcionEnvio) *opcionesEnvio {
+	opts := &opcionesEnvio{}
+	for _, opcion := range opciones {
+		opcion(opts)
+	}
+	return opts
+}
