@@ -1,13 +1,12 @@
-package verifactu_test
+package verifactu
 
 import (
 	"context"
 
-	"github.com/cristianemek/go-verifactu"
 	"github.com/cristianemek/go-verifactu/record"
 )
 
-var _ verifactu.Transport = (*transporteFalso)(nil)
+var _ Transport = (*transporteFalso)(nil)
 
 type transporteFalso struct {
 	respuesta record.RespuestaRegFactuSistemaFacturacion
@@ -15,10 +14,10 @@ type transporteFalso struct {
 
 	llamadas     int
 	ultimoLote   record.RegFactuSistemaFacturacion
-	ultimoTenant verifactu.Tenant
+	ultimoTenant Tenant
 }
 
-func (tf *transporteFalso) Remitir(ctx context.Context, t verifactu.Tenant, lote record.RegFactuSistemaFacturacion) (record.RespuestaRegFactuSistemaFacturacion, error) {
+func (tf *transporteFalso) Remitir(ctx context.Context, t Tenant, lote record.RegFactuSistemaFacturacion) (record.RespuestaRegFactuSistemaFacturacion, error) {
 	tf.llamadas++
 	tf.ultimoLote = lote
 	tf.ultimoTenant = t
