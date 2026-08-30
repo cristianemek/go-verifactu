@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/cristianemek/go-verifactu"
+	"github.com/cristianemek/go-verifactu/record"
 	"github.com/cristianemek/go-verifactu/store/ledger"
 )
 
@@ -98,6 +99,90 @@ func TestLedgerSobreviveReinicio(t *testing.T) {
 
 	if entry4.Alta.Encadenamiento.RegistroAnterior.Huella != entry3.Huella {
 		t.Errorf("Expected entry4 previous fingerprint to match entry3 fingerprint, got %s and %s", entry4.Alta.Encadenamiento.RegistroAnterior.Huella, entry3.Huella)
+	}
+
+}
+
+func TestLedgerEnviosSobrevivenReinicio(t *testing.T) {
+	dir := t.TempDir()
+
+	store, err := ledger.New(dir)
+	if err != nil {
+		t.Fatalf("Error creating ledger: %v", err)
+	}
+
+	engine, err := verifactu.New(verifactu.Config{Store: store, Now: fixedTime})
+	if err != nil {
+		t.Fatalf("Error creating verifactu engine: %v", err)
+	}
+
+	tenant := verifactu.Tenant{NIF: "89890001K", IDSistemaInformatico: "01"}
+
+	entry1, err := engine.Alta(context.Background(), tenant, validRegistroAlta("001"))
+	if err != nil {
+		t.Fatalf("Error calling Alta: %v", err)
+	}
+	_, err = engine.Alta(context.Background(), tenant, validRegistroAlta("002"))
+	if err != nil {
+		t.Fatalf("Error calling Alta: %v", err)
+	}
+	entry3, err := engine.Alta(context.Background(), tenant, validRegistroAlta("003"))
+	if err != nil {
+		t.Fatalf("Error calling Alta: %v", err)
+	}
+
+	err = store.AnexarEnvio(context.Background(), tenant, &verifactu.Envio{
+		CSV: "CSV1",
+		Lineas: []verifactu.LineaEnvio{
+			{Secuencia: entry1.Secuencia, Estado: record.EstadoRegistroCorrecto},
+			{Secuencia: entry3.Secuencia, Estado: record.EstadoRegistroCorrecto},
+		},
+	})
+
+	if err != nil {
+		t.Fatalf("Error calling AnexarEnvio: %v", err)
+	}
+
+	pendientes, err := store.Pendientes(context.Background(), tenant, 0)
+
+	if err != nil {
+		t.Fatalf("Error calling Pendientes: %v", err)
+	}
+
+	if len(pendientes) != 1 {
+		t.Fatalf("Expected 1 pending entries, got %d", len(pendientes))
+	}
+
+	if pendientes[0].Secuencia != 2 {
+		t.Fatalf("Expected pending entry to be entry2, got %+v", pendientes[0])
+	}
+
+	store, err = ledger.New(dir) //Simulates a restart
+
+	if err != nil {
+		t.Fatalf("Error creating ledger: %v", err)
+	}
+
+	pendientes, err = store.Pendientes(context.Background(), tenant, 0)
+	if err != nil {
+		t.Fatalf("Error calling Pendientes: %v", err)
+	}
+
+	if len(pendientes) != 1 {
+		t.Fatalf("Expected 1 pending entries, got %d", len(pendientes))
+	}
+
+	if pendientes[0].Secuencia != 2 {
+		t.Fatalf("Expected pending entry to be entry2, got %+v", pendientes[0])
+	}
+
+	ultimoEnvio, err := store.UltimoEnvio(context.Background(), tenant)
+	if err != nil {
+		t.Fatalf("Error calling UltimoEnvio: %v", err)
+	}
+
+	if ultimoEnvio.CSV != "CSV1" {
+		t.Fatalf("Expected ultimo envio CSV to be 'CSV1', got '%s'", ultimoEnvio.CSV)
 	}
 
 }
