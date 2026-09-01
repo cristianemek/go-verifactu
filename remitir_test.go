@@ -170,3 +170,59 @@ func TestCasarLineasCorrecto(t *testing.T) {
 	}
 
 }
+
+func TestCasarLineasLongitudDistinta(t *testing.T) {
+	entryAlta, lineaAlta := parEntradaLinea(1, "001", OperacionAlta, record.TipoOperacionAlta)
+	entryAnulacion, _ := parEntradaLinea(2, "002", OperacionAnulacion, record.TipoOperacionAnulacion)
+
+	pendientes := []*Entry{entryAlta, entryAnulacion}
+	lineas := []record.RespuestaLinea{lineaAlta}
+
+	resultado, err := casarLineas(pendientes, lineas)
+
+	if !errors.Is(err, ErrRespuestaDescuadrada) {
+		t.Fatalf("casarLineas returned an unexpected error: %v, expected %v", err, ErrRespuestaDescuadrada)
+	}
+
+	if resultado != nil {
+		t.Errorf("casarLineas returned a non-nil result: %v, want nil", resultado)
+	}
+
+}
+
+func TestCasarLineasIDFacturaDistinta(t *testing.T) {
+	entry, linea := parEntradaLinea(1, "001", OperacionAlta, record.TipoOperacionAlta)
+	linea.IDFactura.NumSerieFactura = "999"
+
+	pendientes := []*Entry{entry}
+	lineas := []record.RespuestaLinea{linea}
+
+	resultado, err := casarLineas(pendientes, lineas)
+
+	if !errors.Is(err, ErrRespuestaDescuadrada) {
+		t.Fatalf("casarLineas returned an unexpected error: %v, expected %v", err, ErrRespuestaDescuadrada)
+	}
+
+	if resultado != nil {
+		t.Errorf("casarLineas returned a non-nil result: %v, want nil", resultado)
+	}
+
+}
+
+func TestCasarLineasOperacionCruzada(t *testing.T) {
+	entry, linea := parEntradaLinea(1, "001", OperacionAlta, record.TipoOperacionAnulacion)
+
+	pendientes := []*Entry{entry}
+	lineas := []record.RespuestaLinea{linea}
+
+	resultado, err := casarLineas(pendientes, lineas)
+
+	if !errors.Is(err, ErrRespuestaDescuadrada) {
+		t.Fatalf("casarLineas returned an unexpected error: %v, expected %v", err, ErrRespuestaDescuadrada)
+	}
+
+	if resultado != nil {
+		t.Errorf("casarLineas returned a non-nil result: %v, want nil", resultado)
+	}
+
+}
