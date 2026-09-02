@@ -17,4 +17,5 @@ var (
 	ErrObligadoDesconocido  = errors.New("verifactu: no name for the taxpayer: the batch has no Alta and no ConObligado was given")
 	ErrSinPendientes        = errors.New("verifactu: no pending entries to send")
 	ErrRespuestaDescuadrada = errors.New("verifactu: the AEAT answer does not line up with the batch sent")
+	ErrEsperaActiva         = errors.New("verifactu: waiting, cannot send more entries yet")
 )

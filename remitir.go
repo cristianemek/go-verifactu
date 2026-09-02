@@ -2,6 +2,7 @@ package verifactu
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -74,6 +75,22 @@ func (e *Engine) Remitir(ctx context.Context, t Tenant, opciones ...OpcionEnvio)
 
 	if len(pendientes) == 0 {
 		return nil, ErrSinPendientes
+	}
+
+	if len(pendientes) < maxRegistrosPorEnvio {
+		ultimoEnvio, err := e.store.UltimoEnvio(ctx, t)
+
+		switch {
+		case errors.Is(err, ErrNoEncontrado):
+			// No previous send, we can send the pending entries.
+		case err != nil:
+			return nil, err
+		default:
+			ultimoEnvioTiempoEspera := ultimoEnvio.Instante.Add(ultimoEnvio.TiempoEspera)
+			if ultimoEnvioTiempoEspera.After(e.now()) {
+				return nil, fmt.Errorf("%w: last send was at %s, must wait until %s", ErrEsperaActiva, ultimoEnvio.Instante, ultimoEnvioTiempoEspera)
+			}
+		}
 	}
 
 	nombre, err := resolverObligado(pendientes, opts)
