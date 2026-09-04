@@ -2,9 +2,12 @@ package aeat
 
 import (
 	"encoding/xml"
+	"errors"
+	"os"
 	"strings"
 	"testing"
 
+	"github.com/cristianemek/go-verifactu"
 	"github.com/cristianemek/go-verifactu/record"
 )
 
@@ -42,5 +45,100 @@ func Test_serializarSobre(t *testing.T) {
 
 	if len(recuperado.Body.Peticion.RegistroFactura) != 1 {
 		t.Errorf("len(recuperado.Body.Peticion.RegistroFactura) = %v, want %v", len(recuperado.Body.Peticion.RegistroFactura), 1)
+	}
+}
+
+func TestParsearRespuesta(t *testing.T) {
+	testCases := []struct {
+		name      string
+		file      string
+		body      []byte
+		wantErr   error
+		wantFault bool
+		wantCSV   string
+	}{
+		{
+			name:    "respuesta correcta",
+			file:    "../testdata/xml/respuesta/sobre-respuesta-correcta-no-oficial.xml",
+			wantErr: nil,
+			wantCSV: "A1B2C3D4E5F6G7H8",
+		},
+		{
+			name:      "fault servidor",
+			file:      "../testdata/xml/respuesta/sobre-fault-servidor-no-oficial.xml",
+			wantErr:   verifactu.ErrFaultServidor,
+			wantFault: true,
+		},
+		{
+			name:      "fault cliente",
+			file:      "../testdata/xml/respuesta/sobre-fault-cliente-no-oficial.xml",
+			wantErr:   verifactu.ErrFaultCliente,
+			wantFault: true,
+		},
+		{
+			name:    "sobre vacío",
+			file:    "",
+			body:    []byte(`<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"> <soapenv:Body> </soapenv:Body> </soapenv:Envelope> `),
+			wantErr: ErrRespuestaInesperada,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+
+			var body []byte
+
+			if tc.file != "" {
+				fileBody, err := os.ReadFile(tc.file)
+				if err != nil {
+					t.Fatalf("os.ReadFile() error = %v", err)
+				}
+
+				body = fileBody
+			} else {
+				body = tc.body
+			}
+
+			respuesta, err := parsearRespuesta(body)
+
+			if tc.wantErr != nil {
+				if !errors.Is(err, tc.wantErr) {
+					t.Fatalf("parsearRespuesta() error = %v, wantErr %v", err, tc.wantErr)
+				}
+			} else {
+				if err != nil {
+					t.Fatalf("parsearRespuesta() unexpected error = %v", err)
+				}
+			}
+
+			if tc.wantFault {
+				var sf *SoapFault
+				if !errors.As(err, &sf) {
+					t.Fatalf("parsearRespuesta() error = %v, wantErr %v", err, tc.wantErr)
+				}
+
+				if sf.Message == "" {
+					t.Errorf("parsearRespuesta() fault message is empty, want non-empty")
+				}
+			}
+
+			if tc.wantCSV != "" {
+				if respuesta.CSV != tc.wantCSV {
+					t.Errorf("parsearRespuesta() CSV = %v, want %v", respuesta.CSV, tc.wantCSV)
+				}
+
+				if len(respuesta.RespuestaLinea) != 1 {
+					t.Errorf("parsearRespuesta() len(respuesta.RespuestaLinea) = %v, want %v", len(respuesta.RespuestaLinea), 1)
+				}
+			}
+
+		})
+	}
+}
+func TestParsearRespuestaCuerpoInvalido(t *testing.T) {
+	_, err := parsearRespuesta([]byte("<html>error 502</html>"))
+
+	if err == nil {
+		t.Fatalf("parsearRespuesta() error = %v, wantErr %v", err, ErrRespuestaInesperada)
 	}
 }
