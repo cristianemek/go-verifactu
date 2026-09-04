@@ -224,5 +224,4 @@ func TestCasarLineasOperacionCruzada(t *testing.T) {
 	if resultado != nil {
 		t.Errorf("casarLineas returned a non-nil result: %v, want nil", resultado)
 	}
-
 }
