@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Fault SOAP 1.1 de servidor. Construido a mano segun la especificacion de
+     SOAP 1.1 y el apartado 5.1 del documento de servicios web de la AEAT.
+     NO es un XML oficial: se sustituira por uno real cuando se obtenga.
+
+     Lo que prueba: faultcode = Server => el llamante debe REENVIAR.
+     Ojo al detalle importante: Fault va en el namespace del sobre, pero
+     faultcode, faultstring y detail NO llevan namespace. -->
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/">
+  <soapenv:Body>
+    <soapenv:Fault>
+      <faultcode>soapenv:Server</faultcode>
+      <faultstring>Servicio temporalmente no disponible. Intentelo de nuevo mas tarde.</faultstring>
+      <detail>El servicio no ha podido procesar la peticion por una incidencia interna.</detail>
+    </soapenv:Fault>
+  </soapenv:Body>
+</soapenv:Envelope>

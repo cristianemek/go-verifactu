@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Fault SOAP 1.1 de cliente. Construido a mano, NO es un XML oficial.
+
+     Lo que prueba: faultcode = Client => el llamante NO debe reenviar; hay que
+     corregir el mensaje primero (apartado 5.1 de la AEAT).
+
+     El prefijo va a proposito distinto del otro fixture (SOAP-ENV en vez de
+     soapenv): el prefijo de un QName es arbitrario y la clasificacion debe
+     mirar solo la parte local. -->
+<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/">
+  <SOAP-ENV:Body>
+    <SOAP-ENV:Fault>
+      <faultcode>SOAP-ENV:Client</faultcode>
+      <faultstring>El XML no cumple el esquema SuministroLR.xsd</faultstring>
+      <detail>Elemento no esperado en la posicion Cabecera/ObligadoEmision.</detail>
+    </SOAP-ENV:Fault>
+  </SOAP-ENV:Body>
+</SOAP-ENV:Envelope>
