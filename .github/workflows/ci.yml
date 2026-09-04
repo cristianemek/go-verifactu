@@ -18,7 +18,9 @@ jobs:
           go-version: ${{ matrix.go-version }}
 
       - name: Check formatting
-        run: test -z "$(gofmt -l .)" || { gofmt -l .; exit 1; }
+        run: |
+          diff=$(gofmt -d .)
+          if [ -n "$diff" ]; then echo "$diff"; exit 1; fi
 
       - name: Vet
         run: go vet ./...
