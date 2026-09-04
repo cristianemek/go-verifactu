@@ -59,19 +59,19 @@ func TestParsearRespuesta(t *testing.T) {
 	}{
 		{
 			name:    "respuesta correcta",
-			file:    "../testdata/xml/respuesta/sobre-respuesta-correcta-no-oficial.xml",
+			file:    "../testdata/xml/sobre/sobre-respuesta-correcta-no-oficial.xml",
 			wantErr: nil,
 			wantCSV: "A1B2C3D4E5F6G7H8",
 		},
 		{
 			name:      "fault servidor",
-			file:      "../testdata/xml/respuesta/sobre-fault-servidor-no-oficial.xml",
+			file:      "../testdata/xml/sobre/sobre-fault-servidor-no-oficial.xml",
 			wantErr:   verifactu.ErrFaultServidor,
 			wantFault: true,
 		},
 		{
 			name:      "fault cliente",
-			file:      "../testdata/xml/respuesta/sobre-fault-cliente-no-oficial.xml",
+			file:      "../testdata/xml/sobre/sobre-fault-cliente-no-oficial.xml",
 			wantErr:   verifactu.ErrFaultCliente,
 			wantFault: true,
 		},
