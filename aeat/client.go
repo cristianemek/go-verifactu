@@ -1,10 +1,14 @@
 package aeat
 
 import (
+	"bytes"
+	"context"
+	"io"
 	"net/http"
 	"time"
 
 	"github.com/cristianemek/go-verifactu"
+	"github.com/cristianemek/go-verifactu/record"
 )
 
 const userAgentPorDefecto = "go-verifactu/" + verifactu.Version
@@ -51,4 +55,38 @@ func NewClient(cfg Config) (*Client, error) {
 		url:       url,
 		userAgent: cfg.UserAgent,
 	}, nil
+}
+
+var _ verifactu.Transport = (*Client)(nil)
+
+func (c *Client) Remitir(ctx context.Context, t verifactu.Tenant, lote record.RegFactuSistemaFacturacion) (record.RespuestaRegFactuSistemaFacturacion, error) {
+
+	peticion, err := serializarSobre(lote)
+
+	if err != nil {
+		return record.RespuestaRegFactuSistemaFacturacion{}, err
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.url, bytes.NewReader(peticion))
+	if err != nil {
+		return record.RespuestaRegFactuSistemaFacturacion{}, err
+	}
+
+	req.Header.Set("Content-Type", "text/xml; charset=utf-8")
+	req.Header.Set("User-Agent", c.userAgent)
+	req.Header.Set("SOAPAction", "")
+
+	resp, err := c.http.Do(req)
+	if err != nil {
+		return record.RespuestaRegFactuSistemaFacturacion{}, err
+	}
+
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return record.RespuestaRegFactuSistemaFacturacion{}, err
+	}
+
+	return parsearRespuesta(body)
 }
