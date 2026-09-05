@@ -18,9 +18,17 @@ jobs:
           go-version: ${{ matrix.go-version }}
 
       - name: Check formatting
+        if: matrix.go-version == 'stable'
         run: |
-          diff=$(gofmt -d .)
-          if [ -n "$diff" ]; then echo "$diff"; exit 1; fi
+          # gofmt -l sale 0 aunque encuentre ficheros; gofmt -d sale 1 desde
+          # Go 1.27, y con bash -e eso mataria el paso sin imprimir nada.
+          files=$(gofmt -l .)
+          if [ -n "$files" ]; then
+            echo "estos ficheros necesitan gofmt:"
+            echo "$files"
+            gofmt -d . || true
+            exit 1
+          fi
 
       - name: Vet
         run: go vet ./...

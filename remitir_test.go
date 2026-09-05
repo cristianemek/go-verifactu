@@ -9,25 +9,32 @@ import (
 )
 
 func parEntradaLinea(secuencia uint64, numSerie string, op Operacion, tipo record.TipoOperacion) (*Entry, record.RespuestaLinea) {
-	return &Entry{
-			Secuencia: secuencia,
-			Operacion: op,
-			IDFactura: IDFactura{
-				NIF:      "123123123A",
-				NumSerie: numSerie,
-				Fecha:    record.Fecha(time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)),
-			},
-		}, record.RespuestaLinea{
-			IDFactura: record.IDFacturaExpedida{
-				IDEmisorFactura:        "123123123A",
-				NumSerieFactura:        numSerie,
-				FechaExpedicionFactura: record.Fecha(time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)),
-			},
-			Operacion: record.OperacionRespuesta{
-				TipoOperacion: tipo,
-			},
-			EstadoRegistro: record.EstadoRegistroCorrecto,
-		}
+
+	fecha := record.Fecha(time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC))
+
+	entry := &Entry{
+		Secuencia: secuencia,
+		Operacion: op,
+		IDFactura: IDFactura{
+			NIF:      "123123123A",
+			NumSerie: numSerie,
+			Fecha:    fecha,
+		},
+	}
+
+	linea := record.RespuestaLinea{
+		IDFactura: record.IDFacturaExpedida{
+			IDEmisorFactura:        "123123123A",
+			NumSerieFactura:        numSerie,
+			FechaExpedicionFactura: fecha,
+		},
+		Operacion: record.OperacionRespuesta{
+			TipoOperacion: tipo,
+		},
+		EstadoRegistro: record.EstadoRegistroCorrecto,
+	}
+
+	return entry, linea
 }
 
 func TestParseTiempoEspera(t *testing.T) {
