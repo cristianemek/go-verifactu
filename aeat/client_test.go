@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/cristianemek/go-verifactu"
@@ -217,6 +218,25 @@ func TestNewClientConHTTPClientNoExigeCertificado(t *testing.T) {
 
 	if err != nil {
 		t.Fatalf("Error al crear el cliente: %v", err)
+	}
+
+}
+
+func TestClientRemitirRedireccionEsAccesoDenegado(t *testing.T) {
+	c, srv := clienteContra(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Location", "https://sede.agenciatributaria.gob.es/Sede/errores/erro4033.html")
+		w.WriteHeader(http.StatusFound)
+	})
+	defer srv.Close()
+
+	_, err := c.Remitir(context.Background(), verifactu.Tenant{}, record.RegFactuSistemaFacturacion{})
+
+	if !errors.Is(err, ErrAccesoDenegado) {
+		t.Fatalf("Se esperaba un error de acceso denegado, pero se obtuvo: %v", err)
+	}
+
+	if !strings.Contains(err.Error(), "erro4033") {
+		t.Errorf("Se esperaba que el mensaje de error contuviera la URL de redirección, pero no lo contiene: %v", err)
 	}
 
 }

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/tls"
+	"fmt"
 	"io"
 	"net/http"
 	"time"
@@ -65,8 +66,14 @@ func NewClient(cfg Config) (*Client, error) {
 		}
 	}
 
+	client := *httpClient
+
+	client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+		return http.ErrUseLastResponse
+	}
+
 	return &Client{
-		http:      httpClient,
+		http:      &client,
 		url:       url,
 		userAgent: cfg.UserAgent,
 	}, nil
@@ -98,10 +105,22 @@ func (c *Client) Remitir(ctx context.Context, t verifactu.Tenant, lote record.Re
 
 	defer resp.Body.Close()
 
+	// aeat redirects to an error page when the client certificate is missing or not accepted, so we need to handle 3xx status codes explicitly, normally 302
+	if resp.StatusCode >= 300 && resp.StatusCode < 400 {
+		return record.RespuestaRegFactuSistemaFacturacion{}, fmt.Errorf("%w: status code %d, location: %s", ErrAccesoDenegado, resp.StatusCode, resp.Header.Get("Location"))
+	}
+
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return record.RespuestaRegFactuSistemaFacturacion{}, err
 	}
 
-	return parsearRespuesta(body)
+	respuesta, err := parsearRespuesta(body)
+
+	if err != nil {
+		return record.RespuestaRegFactuSistemaFacturacion{}, fmt.Errorf("%w (http %d)", err, resp.StatusCode)
+
+	}
+
+	return respuesta, nil
 }
