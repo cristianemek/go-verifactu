@@ -7,6 +7,8 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
+	"errors"
+	"io/fs"
 	"math/big"
 	"os"
 	"path/filepath"
@@ -25,9 +27,9 @@ func generarPar(t *testing.T, dir, nombre string) (rutaCert, rutaClave string) {
 
 	plantilla := x509.Certificate{
 		SerialNumber: big.NewInt(1),
-		Subject:      pkix.Name{CommonName: "nombre"},
+		Subject:      pkix.Name{CommonName: nombre},
 		NotBefore:    time.Now().Add(-time.Hour),
-		NotAfter:     time.Now().Add(-time.Hour),
+		NotAfter:     time.Now().Add(time.Hour),
 		KeyUsage:     x509.KeyUsageDigitalSignature,
 		ExtKeyUsage:  []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
 	}
@@ -56,5 +58,51 @@ func generarPar(t *testing.T, dir, nombre string) (rutaCert, rutaClave string) {
 	}
 
 	return rutaCert, rutaClave
+
+}
+
+func TestCargarPEM(t *testing.T) {
+	dir := t.TempDir()
+
+	rutaCert, rutaClave := generarPar(t, dir, "cliente")
+
+	cert, err := CargarPEM(rutaCert, rutaClave)
+	if err != nil {
+		t.Fatalf("Error al cargar el certificado y la clave: %v", err)
+	}
+
+	if len(cert.Certificate) != 1 {
+		t.Fatalf("Se esperaba un certificado, pero se obtuvieron %d", len(cert.Certificate))
+	}
+
+}
+
+func TestCargarPEMNoExiste(t *testing.T) {
+	dir := t.TempDir()
+
+	rutaCert := filepath.Join(dir, "no_existe.crt.pem")
+	rutaClave := filepath.Join(dir, "no_existe.key.pem")
+
+	_, err := CargarPEM(rutaCert, rutaClave)
+	if err == nil {
+		t.Fatalf("Se esperaba un error al cargar un certificado que no existe")
+	}
+
+	if !errors.Is(err, fs.ErrNotExist) {
+		t.Errorf("Se esperaba un error de tipo fs.ErrNotExist, pero se obtuvo: %v", err)
+	}
+}
+
+func TestCargarPEMClaveQueNoCorresponde(t *testing.T) {
+	dir := t.TempDir()
+
+	rutaCert, _ := generarPar(t, dir, "uno")
+	_, rutaClave := generarPar(t, dir, "dos")
+
+	_, err := CargarPEM(rutaCert, rutaClave)
+
+	if err == nil {
+		t.Errorf("Se esperaba un error al cargar un certificado y una clave que no corresponden")
+	}
 
 }
