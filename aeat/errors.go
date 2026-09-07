@@ -3,6 +3,7 @@ package aeat
 import "errors"
 
 var (
-	ErrEntornoDesconocido  = errors.New("aeat: unknown environment")
-	ErrRespuestaInesperada = errors.New("aeat: unexpected response from AEAT")
+	ErrEntornoDesconocido   = errors.New("aeat: unknown environment")
+	ErrRespuestaInesperada  = errors.New("aeat: unexpected response from AEAT")
+	ErrCertificadoRequerido = errors.New("aeat: a client certificate is required to talk to the AEAT")
 )

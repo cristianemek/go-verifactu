@@ -3,6 +3,7 @@ package aeat
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
 	"io"
 	"net/http"
 	"time"
@@ -17,9 +18,11 @@ const userAgentPorDefecto = "go-verifactu/" + verifactu.Version
 type Config struct {
 	Entorno         Entorno
 	TipoCertificado TipoCertificado
-	UserAgent       string
-	Timeout         time.Duration
-	HTTPClient      *http.Client
+	// requires except you bring your own http.Client
+	Certificado tls.Certificate
+	UserAgent   string
+	Timeout     time.Duration
+	HTTPClient  *http.Client
 }
 
 type Client struct {
@@ -45,8 +48,20 @@ func NewClient(cfg Config) (*Client, error) {
 
 	httpClient := cfg.HTTPClient
 	if httpClient == nil {
+		if len(cfg.Certificado.Certificate) == 0 {
+			return nil, ErrCertificadoRequerido
+		}
+
+		tlsCfg := &tls.Config{
+			Certificates: []tls.Certificate{cfg.Certificado},
+			MinVersion:   tls.VersionTLS12,
+		}
+
 		httpClient = &http.Client{
 			Timeout: cfg.Timeout,
+			Transport: &http.Transport{
+				TLSClientConfig: tlsCfg,
+			},
 		}
 	}
 

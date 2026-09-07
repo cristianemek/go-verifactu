@@ -192,3 +192,31 @@ func TestClientRemitirErrorDeTransporte(t *testing.T) {
 	}
 
 }
+
+func TestNewClientSinCertificado(t *testing.T) {
+	client, err := NewClient(Config{
+		Entorno:         EntornoPruebas,
+		TipoCertificado: CertificadoRepresentante,
+	})
+	if !errors.Is(err, ErrCertificadoRequerido) {
+		t.Fatalf("Se esperaba un error de certificado, pero no se obtuvo ninguno")
+	}
+
+	if client != nil {
+		t.Fatalf("Se esperaba un cliente nulo, pero se obtuvo uno no nulo")
+	}
+
+}
+
+func TestNewClientConHTTPClientNoExigeCertificado(t *testing.T) {
+	_, err := NewClient(Config{
+		Entorno:         EntornoPruebas,
+		TipoCertificado: CertificadoRepresentante,
+		HTTPClient:      &http.Client{},
+	})
+
+	if err != nil {
+		t.Fatalf("Error al crear el cliente: %v", err)
+	}
+
+}
