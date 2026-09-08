@@ -260,41 +260,47 @@ func (e *Engine) Anular(ctx context.Context, t Tenant, r record.RegistroAnulacio
 
 	}
 
-	secuencia, encadenamiento, err := e.siguienteCadena(ctx, t)
+	for range maxIntentosAnexar {
+		secuencia, encadenamiento, err := e.siguienteCadena(ctx, t)
 
-	if err != nil {
-		return nil, err
-	}
+		if err != nil {
+			return nil, err
+		}
 
-	r.Encadenamiento = encadenamiento
-	r.FechaHoraHusoGenRegistro = record.FechaHora(e.now().Truncate(time.Second))
-	if esCorreccion {
-		if opts.esTrasRechazo {
-			r.RechazoPrevio = record.Ptr(record.RechazoPrevioAnulacionSi)
+		r.Encadenamiento = encadenamiento
+		r.FechaHoraHusoGenRegistro = record.FechaHora(e.now().Truncate(time.Second))
+		if esCorreccion {
+			if opts.esTrasRechazo {
+				r.RechazoPrevio = record.Ptr(record.RechazoPrevioAnulacionSi)
+			}
+		}
+
+		registroAnulacion, err := record.NewRegistroAnulacion(r)
+		if err != nil {
+			return nil, err
+		}
+
+		entry := Entry{
+			Operacion:  OperacionAnulacion,
+			Alta:       nil,
+			Anulacion:  &registroAnulacion,
+			Secuencia:  secuencia,
+			Huella:     registroAnulacion.Huella,
+			IDFactura:  id,
+			Correccion: esCorreccion,
+		}
+
+		err = e.store.Anexar(ctx, t, &entry)
+		if err == nil {
+			return &entry, nil
+		}
+
+		if !errors.Is(err, ErrConflictoDeSecuencia) {
+			return nil, err
 		}
 	}
 
-	registroAnulacion, err := record.NewRegistroAnulacion(r)
-	if err != nil {
-		return nil, err
-	}
-
-	entry := Entry{
-		Operacion:  OperacionAnulacion,
-		Alta:       nil,
-		Anulacion:  &registroAnulacion,
-		Secuencia:  secuencia,
-		Huella:     registroAnulacion.Huella,
-		IDFactura:  id,
-		Correccion: esCorreccion,
-	}
-
-	err = e.store.Anexar(ctx, t, &entry)
-	if err != nil {
-		return nil, err
-	}
-
-	return &entry, nil
+	return nil, fmt.Errorf("%w: %d", ErrConflictoDeSecuencia, maxIntentosAnexar)
 }
 
 // Estado returns the current state of a given invoice, or ErrNoEncontrado if it is not found.
