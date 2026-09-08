@@ -3,6 +3,7 @@ package verifactu
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sync"
 	"time"
 
@@ -139,6 +140,8 @@ func (e *Engine) siguienteCadena(ctx context.Context, t Tenant) (uint64, record.
 // The Engine overwrites these fields of the record you pass: Encadenamiento,
 // FechaHoraHusoGenRegistro, IDVersion, TipoHuella, Huella, and with options
 // Subsanacion and RechazoPrevio. The record is taken by value.
+const maxIntentosAnexar = 3
+
 func (e *Engine) Alta(ctx context.Context, t Tenant, r record.RegistroAlta, opciones ...OpcionRegistro) (*Entry, error) {
 	opts := aplicarOpcionesRegistro(opciones...)
 
@@ -166,43 +169,50 @@ func (e *Engine) Alta(ctx context.Context, t Tenant, r record.RegistroAlta, opci
 
 	}
 
-	secuencia, encadenamiento, err := e.siguienteCadena(ctx, t)
+	for range maxIntentosAnexar {
+		secuencia, encadenamiento, err := e.siguienteCadena(ctx, t)
 
-	if err != nil {
-		return nil, err
-	}
-
-	r.Encadenamiento = encadenamiento
-	r.FechaHoraHusoGenRegistro = record.FechaHora(e.now().Truncate(time.Second))
-	if esCorreccion {
-		if opts.esTrasRechazo {
-			r.RechazoPrevio = record.Ptr(record.RechazoPrevioNoExiste)
+		if err != nil {
+			return nil, err
 		}
-		r.Subsanacion = record.Ptr(record.SiNoSi)
+
+		r.Encadenamiento = encadenamiento
+		r.FechaHoraHusoGenRegistro = record.FechaHora(e.now().Truncate(time.Second))
+		if esCorreccion {
+			if opts.esTrasRechazo {
+				r.RechazoPrevio = record.Ptr(record.RechazoPrevioNoExiste)
+			}
+			r.Subsanacion = record.Ptr(record.SiNoSi)
+		}
+
+		registroAlta, err := record.NewRegistroAlta(r)
+
+		if err != nil {
+			return nil, err
+		}
+
+		entry := Entry{
+			Operacion:  OperacionAlta,
+			Alta:       &registroAlta,
+			Secuencia:  secuencia,
+			Huella:     registroAlta.Huella,
+			IDFactura:  id,
+			Anulacion:  nil,
+			Correccion: esCorreccion,
+		}
+
+		err = e.store.Anexar(ctx, t, &entry)
+		if err == nil {
+			return &entry, nil
+		}
+
+		if !errors.Is(err, ErrConflictoDeSecuencia) {
+			return nil, err
+		}
+
 	}
 
-	registroAlta, err := record.NewRegistroAlta(r)
-
-	if err != nil {
-		return nil, err
-	}
-
-	entry := Entry{
-		Operacion:  OperacionAlta,
-		Alta:       &registroAlta,
-		Secuencia:  secuencia,
-		Huella:     registroAlta.Huella,
-		IDFactura:  id,
-		Anulacion:  nil,
-		Correccion: esCorreccion,
-	}
-
-	err = e.store.Anexar(ctx, t, &entry)
-	if err != nil {
-		return nil, err
-	}
-
-	return &entry, nil
+	return nil, fmt.Errorf("%w: %d", ErrConflictoDeSecuencia, maxIntentosAnexar)
 }
 
 // Anular records the cancellation of a previously issued invoice. Same algorithm

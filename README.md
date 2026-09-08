@@ -1,5 +1,11 @@
 # go-verifactu
 
+[![Go Reference](https://pkg.go.dev/badge/github.com/cristianemek/go-verifactu.svg)](https://pkg.go.dev/github.com/cristianemek/go-verifactu)
+[![CI](https://github.com/cristianemek/go-verifactu/actions/workflows/ci.yml/badge.svg)](https://github.com/cristianemek/go-verifactu/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/cristianemek/go-verifactu/branch/main/graph/badge.svg)](https://codecov.io/gh/cristianemek/go-verifactu)
+[![Go Report Card](https://goreportcard.com/badge/github.com/cristianemek/go-verifactu)](https://goreportcard.com/report/github.com/cristianemek/go-verifactu)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 Librería en Go para VERI*FACTU, el sistema de facturación de la AEAT.
 
 Calcula la huella encadenada, monta la URL del QR y remite los registros a

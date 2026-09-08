@@ -34,7 +34,18 @@ jobs:
         run: go vet ./...
 
       - name: Test
-        run: go test -race ./...
+        run: go test -race -coverpkg=./... -covermode=atomic -coverprofile=coverage.out ./...
+
+      - name: Coverage total
+        run: go tool cover -func=coverage.out | tail -1
+
+      - name: Upload coverage to Codecov
+        if: matrix.go-version == 'stable'
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./coverage.out
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false
 
       - name: Install xmllint
         run: sudo apt-get update && sudo apt-get install -y libxml2-utils
