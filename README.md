@@ -1,47 +1,56 @@
 # go-verifactu
 
-Librería y servicio en Go para VERI*FACTU, el sistema de facturación de la AEAT.
+Librería en Go para VERI*FACTU, el sistema de facturación de la AEAT.
 
-Calcula la huella encadenada, monta el QR y envía los registros a Hacienda.
+Calcula la huella encadenada, monta la URL del QR y remite los registros a
+Hacienda.
 
-Dos formas de usarlo:
+Sin dependencias. Go 1.22+.
 
-- **Binario** en tu VPS. Levantas el servicio, le hablas por HTTP desde PHP,
-  Node, Python o lo que uses. No hace falta saber Go.
-- **Librería** si tu proyecto ya es Go. `go get`.
+En desarrollo: la API puede cambiar hasta la v1.0.0.
 
- En desarrollo. La API cambia y todavía no vale para producción.
-
-## Como servicio
-
-```
-go install github.com/cristianemek/go-verifactu/cmd/verifactu@latest
-verifactu serve
-```
-
-Un binario estático, sin runtime ni dependencias. Cópialo al VPS y ya está.
-
-```
-curl -X POST localhost:8080/v1/alta \
-  -H 'Content-Type: application/json' \
-  -d @factura.json
-```
-
-Te devuelve el registro con su huella y la URL del QR para imprimir en la
-factura. El envío a la AEAT va en cola por detrás.
-
-## Como librería
+## Instalación
 
 ```
 go get github.com/cristianemek/go-verifactu
 ```
 
-Go 1.22+. Sin dependencias.
+## Uso
+
+```go
+store, _ := ledger.New("./datos-verifactu")
+
+cert, _ := aeat.CargarPEM("certificado.pem", "certificado.pem")
+cliente, _ := aeat.NewClient(aeat.Config{
+    Entorno:         aeat.EntornoPruebas,
+    TipoCertificado: aeat.CertificadoRepresentante,
+    Certificado:     cert,
+})
+
+engine, _ := verifactu.New(verifactu.Config{Store: store, Transport: cliente})
+
+engine.Alta(ctx, tenant, factura)   // registra y encadena
+engine.Remitir(ctx, tenant)         // envía lo pendiente a la AEAT
+```
+
+Los ejemplos completos están en el
+[godoc](https://pkg.go.dev/github.com/cristianemek/go-verifactu#pkg-examples).
+
+Dos cosas antes de empezar: los importes van en enteros —`record.Amount(2100)`
+son 21,00 €— y `Alta` es idempotente, así que reintentar tras un timeout es
+seguro.
 
 ## Qué cubre
 
-Solo la modalidad VERI*FACTU y territorio común. No hace firma XAdES, ni
+Sólo la modalidad VERI*FACTU y territorio común. No hace firma XAdES, ni
 TicketBAI, ni factura electrónica B2B.
+
+El certificado se carga en PEM. Si tienes un `.p12` de la FNMT, se convierte una
+vez:
+
+```
+openssl pkcs12 -in certificado.p12 -out certificado.pem -nodes
+```
 
 ## Aviso
 
