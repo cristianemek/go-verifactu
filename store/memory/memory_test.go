@@ -82,7 +82,7 @@ func TestAnexarYRecuperar(t *testing.T) {
 	}
 }
 
-func TestSecuenciasIncorrectas(t *testing.T) {
+func TestConflictoDeSecuencia(t *testing.T) {
 	s := New()
 
 	tenant := buildTenant("89890001K")
