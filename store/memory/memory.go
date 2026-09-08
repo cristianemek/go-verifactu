@@ -61,7 +61,7 @@ func (s *Store) Anexar(ctx context.Context, t verifactu.Tenant, e *verifactu.Ent
 	cadena := s.cadenas[t]
 
 	if e.Secuencia != uint64(len(cadena)+1) {
-		return verifactu.ErrCadenaBifurcada
+		return verifactu.ErrConflictoDeSecuencia
 	}
 
 	if !e.Correccion {

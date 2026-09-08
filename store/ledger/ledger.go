@@ -211,7 +211,7 @@ func (s *Store) Anexar(ctx context.Context, t verifactu.Tenant, e *verifactu.Ent
 	defer s.mu.Unlock()
 
 	if e.Secuencia != uint64(len(s.cadenas[t])+1) {
-		return verifactu.ErrCadenaBifurcada
+		return verifactu.ErrConflictoDeSecuencia
 	}
 
 	if !e.Correccion {

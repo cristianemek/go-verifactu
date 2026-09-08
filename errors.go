@@ -8,6 +8,7 @@ var (
 	// ErrCadenaBifurcada means someone tried to append out of order. Never
 	// recover from this silently: a forked chain cannot be fixed.
 	ErrCadenaBifurcada      = errors.New("verifactu: chain forked")
+	ErrConflictoDeSecuencia = errors.New("verifactu: sequence conflict, another writer appended first")
 	ErrStoreRequerido       = errors.New("verifactu: store is required")
 	ErrTenantInvalido       = errors.New("verifactu: tenant is invalid")
 	ErrOpcionNoAplicable    = errors.New("verifactu: option not applicable for this operation")

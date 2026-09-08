@@ -95,7 +95,7 @@ func TestSecuenciasIncorrectas(t *testing.T) {
 
 	entryIncorrecta := buildEntry(3, "87654321/G33", verifactu.OperacionAlta)
 	err = s.Anexar(context.Background(), tenant, entryIncorrecta)
-	if !errors.Is(err, verifactu.ErrCadenaBifurcada) {
+	if !errors.Is(err, verifactu.ErrConflictoDeSecuencia) {
 		t.Fatalf("Anexar() = %v, want error", err)
 	}
 }
