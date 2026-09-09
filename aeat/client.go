@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -123,4 +124,21 @@ func (c *Client) Remitir(ctx context.Context, t verifactu.Tenant, lote record.Re
 	}
 
 	return respuesta, nil
+}
+
+// ProbarConexion checks that the certificate works against the AEAT without
+// filing anything: it sends an empty batch and expects a client fault back.
+// It is a real request, so do not call it in a loop or a health check.
+func (c *Client) ProbarConexion(ctx context.Context) error {
+	_, err := c.Remitir(ctx, verifactu.Tenant{}, record.RegFactuSistemaFacturacion{})
+
+	switch {
+	case errors.Is(err, verifactu.ErrFaultCliente):
+		return nil
+	case err == nil:
+		return fmt.Errorf("error inesperado: la AEAT respondió sin error a un lote vacío")
+	default:
+		return err
+	}
+
 }

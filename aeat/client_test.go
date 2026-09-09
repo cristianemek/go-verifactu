@@ -240,3 +240,71 @@ func TestClientRemitirRedireccionEsAccesoDenegado(t *testing.T) {
 	}
 
 }
+
+func TestProbarConexion(t *testing.T) {
+	fileRespuestaCorrecta, err := os.ReadFile("../testdata/xml/sobre/sobre-respuesta-correcta-no-oficial.xml")
+	if err != nil {
+		t.Fatalf("Error al leer el archivo: %v", err)
+	}
+
+	fileFaultCliente, err := os.ReadFile("../testdata/xml/sobre/sobre-fault-cliente-no-oficial.xml")
+	if err != nil {
+		t.Fatalf("Error al leer el archivo: %v", err)
+	}
+
+	testCases := []struct {
+		name      string
+		handler   http.HandlerFunc
+		want      error
+		wantError bool
+	}{
+		{
+			name: "certificado correcto",
+			handler: func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusInternalServerError)
+				w.Write(fileFaultCliente)
+			},
+			want: nil,
+		},
+		{
+			name: "certificado incorrecto",
+			handler: func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Location", "https://sede.agenciatributaria.gob.es/Sede/errores/erro4033.html")
+				w.WriteHeader(http.StatusFound)
+			},
+			want: ErrAccesoDenegado,
+		},
+		{
+			name: "la aeat acepta el lote vacío",
+			handler: func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusOK)
+				w.Write(fileRespuestaCorrecta)
+			},
+			wantError: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			c, _ := clienteContra(t, tc.handler)
+
+			err := c.ProbarConexion(context.Background())
+
+			if tc.want != nil {
+				if !errors.Is(err, tc.want) {
+					t.Fatalf("Se esperaba un error %v, pero se obtuvo: %v", tc.want, err)
+				}
+			} else if tc.wantError {
+				if err == nil {
+					t.Fatalf("Se esperaba un error, pero no se obtuvo ninguno")
+				}
+			} else {
+				if err != nil {
+					t.Fatalf("Se esperaba ningún error, pero se obtuvo: %v", err)
+				}
+			}
+
+		})
+	}
+
+}
