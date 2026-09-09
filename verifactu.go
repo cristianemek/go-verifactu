@@ -228,6 +228,9 @@ func (e *Engine) Alta(ctx context.Context, t Tenant, r record.RegistroAlta, opci
 // The Engine overwrites these fields of the record you pass: Encadenamiento,
 // FechaHoraHusoGenRegistro, IDVersion, TipoHuella, Huella, and with TrasRechazo
 // RechazoPrevio. The record is taken by value.
+//
+// SinRegistroPrevio is yours to set: use it to cancel a record the AEAT never
+// received, and the Engine passes it through untouched.
 func (e *Engine) Anular(ctx context.Context, t Tenant, r record.RegistroAnulacion, opciones ...OpcionRegistro) (*Entry, error) {
 
 	opts := aplicarOpcionesRegistro(opciones...)

@@ -184,6 +184,37 @@ func TestIdempotenciaAlta(t *testing.T) {
 
 }
 
+func TestIdempotenciaAnular(t *testing.T) {
+	store := memory.New()
+	engine, err := verifactu.New(verifactu.Config{Store: store, Now: fixedTime})
+	if err != nil {
+		t.Fatalf("Error creating engine: %v", err)
+	}
+	tenant := verifactu.Tenant{NIF: "89890001K", IDSistemaInformatico: "01"}
+
+	entry1, err := engine.Anular(context.Background(), tenant, validRegistroAnulacion("001"))
+	if err != nil {
+		t.Fatalf("Error creating first entry: %v", err)
+	}
+	entry2, err := engine.Anular(context.Background(), tenant, validRegistroAnulacion("001"))
+	if err != nil {
+		t.Fatalf("Error creating second entry: %v", err)
+	}
+
+	if entry2.Secuencia != 1 || entry2.Huella != entry1.Huella {
+		t.Fatalf("Expected sequence 1 and same Huella for second entry, got %d and %s", entry2.Secuencia, entry2.Huella)
+	}
+
+	lastEntry, err := store.Ultimo(context.Background(), tenant)
+	if err != nil {
+		t.Fatalf("Error retrieving last entry: %v", err)
+	}
+
+	if lastEntry.Secuencia != 1 || lastEntry.Huella != entry1.Huella {
+		t.Fatalf("Expected last entry to have sequence 1 and same Huella as first entry, got %d and %s", lastEntry.Secuencia, lastEntry.Huella)
+	}
+}
+
 func TestAltaInvalida(t *testing.T) {
 	store := memory.New()
 	engine, err := verifactu.New(verifactu.Config{Store: store, Now: fixedTime})
