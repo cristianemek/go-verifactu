@@ -67,6 +67,9 @@ type Config struct {
 	Transport Transport
 	// Now is optional. If nil, time.Now is used. It is useful for testing.
 	Now func() time.Time
+	// SistemaInformatico is optional. If set, the Engine copies it into every
+	// record, so callers do not repeat it on each invoice.
+	SistemaInformatico *record.SistemaInformatico
 }
 
 // Engine owns the chain state. It serializes operations per tenant so two
@@ -75,6 +78,7 @@ type Engine struct {
 	store       Store
 	transport   Transport
 	now         func() time.Time
+	sistema     *record.SistemaInformatico
 	mu          sync.Mutex
 	tenantLocks map[Tenant]*sync.Mutex
 }
@@ -91,6 +95,7 @@ func New(cfg Config) (*Engine, error) {
 		store:       cfg.Store,
 		now:         cfg.Now,
 		transport:   cfg.Transport,
+		sistema:     cfg.SistemaInformatico,
 		tenantLocks: make(map[Tenant]*sync.Mutex),
 	}, nil
 }
@@ -130,6 +135,9 @@ func (e *Engine) siguienteCadena(ctx context.Context, t Tenant) (uint64, record.
 
 }
 
+// maxIntentosAnexar bounds the retries when another writer appends first.
+const maxIntentosAnexar = 3
+
 // Alta records an issued invoice: it assigns the sequence number, builds the
 // chain link, fixes the generation timestamp and persists the entry.
 //
@@ -138,10 +146,9 @@ func (e *Engine) siguienteCadena(ctx context.Context, t Tenant) (uint64, record.
 // call appends a correction sharing the same key.
 //
 // The Engine overwrites these fields of the record you pass: Encadenamiento,
-// FechaHoraHusoGenRegistro, IDVersion, TipoHuella, Huella, and with options
-// Subsanacion and RechazoPrevio. The record is taken by value.
-const maxIntentosAnexar = 3
-
+// FechaHoraHusoGenRegistro, IDVersion, TipoHuella, Huella, SistemaInformatico
+// when it is in the Config, and with options Subsanacion and RechazoPrevio.
+// The record is taken by value.
 func (e *Engine) Alta(ctx context.Context, t Tenant, r record.RegistroAlta, opciones ...OpcionRegistro) (*Entry, error) {
 	opts := aplicarOpcionesRegistro(opciones...)
 
@@ -178,6 +185,11 @@ func (e *Engine) Alta(ctx context.Context, t Tenant, r record.RegistroAlta, opci
 
 		r.Encadenamiento = encadenamiento
 		r.FechaHoraHusoGenRegistro = record.FechaHora(e.now().Truncate(time.Second))
+
+		if e.sistema != nil {
+			r.SistemaInformatico = *e.sistema
+		}
+
 		if esCorreccion {
 			if opts.esTrasRechazo {
 				r.RechazoPrevio = record.Ptr(record.RechazoPrevioNoExiste)
@@ -226,8 +238,9 @@ func (e *Engine) Alta(ctx context.Context, t Tenant, r record.RegistroAlta, opci
 // to a cancellation and returns ErrOpcionNoAplicable.
 //
 // The Engine overwrites these fields of the record you pass: Encadenamiento,
-// FechaHoraHusoGenRegistro, IDVersion, TipoHuella, Huella, and with TrasRechazo
-// RechazoPrevio. The record is taken by value.
+// FechaHoraHusoGenRegistro, IDVersion, TipoHuella, Huella, SistemaInformatico
+// when it is in the Config, and with TrasRechazo RechazoPrevio. The record is
+// taken by value.
 //
 // SinRegistroPrevio is yours to set: use it to cancel a record the AEAT never
 // received, and the Engine passes it through untouched.
@@ -272,6 +285,11 @@ func (e *Engine) Anular(ctx context.Context, t Tenant, r record.RegistroAnulacio
 
 		r.Encadenamiento = encadenamiento
 		r.FechaHoraHusoGenRegistro = record.FechaHora(e.now().Truncate(time.Second))
+
+		if e.sistema != nil {
+			r.SistemaInformatico = *e.sistema
+		}
+
 		if esCorreccion {
 			if opts.esTrasRechazo {
 				r.RechazoPrevio = record.Ptr(record.RechazoPrevioAnulacionSi)

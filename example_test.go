@@ -16,7 +16,21 @@ import (
 func ExampleEngine_Alta() {
 	store := memory.New()
 
-	engine, err := verifactu.New(verifactu.Config{Store: store, Now: func() time.Time { return time.Date(2024, 1, 1, 12, 0, 0, 0, time.UTC) }})
+	engine, err := verifactu.New(verifactu.Config{
+		Store: store,
+		Now:   func() time.Time { return time.Date(2024, 1, 1, 12, 0, 0, 0, time.UTC) },
+		SistemaInformatico: &record.SistemaInformatico{
+			NombreRazon:                 "Empresa",
+			NIF:                         record.Ptr("A12345678"),
+			NombreSistemaInformatico:    "go-verifactu",
+			IdSistemaInformatico:        "1",
+			Version:                     "0.1",
+			NumeroInstalacion:           "1",
+			TipoUsoPosibleSoloVerifactu: record.SiNoNo,
+			TipoUsoPosibleMultiOT:       record.SiNoNo,
+			IndicadorMultiplesOT:        record.SiNoNo,
+		},
+	})
 	if err != nil {
 		panic(err)
 	}
@@ -40,17 +54,6 @@ func ExampleEngine_Alta() {
 		},
 		CuotaTotal:   2100,
 		ImporteTotal: 12100,
-		SistemaInformatico: record.SistemaInformatico{
-			NombreRazon:                 "Empresa",
-			NIF:                         record.Ptr("A12345678"),
-			NombreSistemaInformatico:    "go-verifactu",
-			IdSistemaInformatico:        "1",
-			Version:                     "0.1",
-			NumeroInstalacion:           "1",
-			TipoUsoPosibleSoloVerifactu: record.SiNoNo,
-			TipoUsoPosibleMultiOT:       record.SiNoNo,
-			IndicadorMultiplesOT:        record.SiNoNo,
-		},
 	}
 
 	entry, err := engine.Alta(context.Background(), tenant, factura)
@@ -88,7 +91,22 @@ func ExampleEngine_Remitir() {
 		panic(err)
 	}
 
-	engine, err := verifactu.New(verifactu.Config{Store: store, Transport: cliente})
+	engine, err := verifactu.New(verifactu.Config{
+		Store:     store,
+		Transport: cliente,
+		SistemaInformatico: &record.SistemaInformatico{
+			NombreRazon:                 "Empresa",
+			NIF:                         record.Ptr("A12345678"),
+			NombreSistemaInformatico:    "go-verifactu",
+			IdSistemaInformatico:        "1",
+			Version:                     "0.1",
+			NumeroInstalacion:           "1",
+			TipoUsoPosibleSoloVerifactu: record.SiNoNo,
+			TipoUsoPosibleMultiOT:       record.SiNoNo,
+			IndicadorMultiplesOT:        record.SiNoNo,
+		},
+	})
+
 	if err != nil {
 		panic(err)
 	}
