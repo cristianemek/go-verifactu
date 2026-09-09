@@ -34,6 +34,8 @@ type Store struct {
 	liquidados map[verifactu.Tenant]map[uint64]bool
 }
 
+// New opens the directory and rebuilds the index from its files. One process
+// per directory: two writers would fork the chain, and nothing stops them.
 func New(dir string) (*Store, error) {
 
 	err := os.MkdirAll(dir, 0o755)
