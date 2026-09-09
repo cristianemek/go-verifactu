@@ -1,0 +1,25 @@
+{
+  "listen": ":8080",
+  "data": "./datos",
+  "entorno": "pruebas",
+  "certificado": "dev.pem",
+  "tipo_certificado": "representante",
+  "remision_cada": "60s",
+  "sistema": {
+    "NombreRazon": "TU EMPRESA SL",
+    "NIF": "89890001K",
+    "NombreSistemaInformatico": "verifactud",
+    "IdSistemaInformatico": "01",
+    "Version": "0.9.0",
+    "NumeroInstalacion": "1",
+    "TipoUsoPosibleSoloVerifactu": "S",
+    "TipoUsoPosibleMultiOT": "S",
+    "IndicadorMultiplesOT": "S"
+  },
+  "tenants": {
+    "89890001K": {
+      "nombre": "EMPRESA DE PRUEBAS SL",
+      "token": "cambia-este-token-antes-de-desplegar"
+    }
+  }
+}

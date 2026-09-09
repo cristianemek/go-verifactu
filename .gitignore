@@ -51,3 +51,9 @@ docs/aeat/*.pdf
 .vscode/
 .DS_Store
 Thumbs.db
+# verifactud: configuracion real (lleva tokens) y certificados de desarrollo
+cmd/verifactud/verifactud.json
+cmd/verifactud/datos/
+cmd/verifactud/*.pem
+cmd/verifactud/*.key
+cmd/verifactud/*.crt
