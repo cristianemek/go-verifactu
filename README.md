@@ -41,9 +41,10 @@ engine.Remitir(ctx, tenant)         // envía lo pendiente a la AEAT
 Los ejemplos completos están en el
 [godoc](https://pkg.go.dev/github.com/cristianemek/go-verifactu#pkg-examples).
 
-Dos cosas antes de empezar: los importes van en enteros —`record.Amount(2100)`
-son 21,00 €— y `Alta` es idempotente, así que reintentar tras un timeout es
-seguro.
+Tres cosas antes de empezar: los importes van en enteros —`record.Amount(2100)`
+son 21,00 €—, `Alta` es idempotente, así que reintentar tras un timeout es
+seguro, y `factura.Avisos()` comprueba los descuadres que la AEAT marca pero no
+rechaza.
 
 ## Qué cubre
 
