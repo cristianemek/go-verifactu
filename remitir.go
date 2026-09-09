@@ -88,7 +88,10 @@ func (e *Engine) Remitir(ctx context.Context, t Tenant, opciones ...OpcionEnvio)
 		default:
 			ultimoEnvioTiempoEspera := ultimoEnvio.Instante.Add(ultimoEnvio.TiempoEspera)
 			if ultimoEnvioTiempoEspera.After(e.now()) {
-				return nil, fmt.Errorf("%w: last send was at %s, must wait until %s", ErrEsperaActiva, ultimoEnvio.Instante, ultimoEnvioTiempoEspera)
+				return nil, &ErrorEspera{
+					Restante: ultimoEnvioTiempoEspera.Sub(e.now()),
+					Hasta:    ultimoEnvioTiempoEspera,
+				}
 			}
 		}
 	}

@@ -1,6 +1,10 @@
 package verifactu
 
-import "errors"
+import (
+	"errors"
+	"fmt"
+	"time"
+)
 
 var (
 	ErrNoEncontrado = errors.New("verifactu: entry not found")
@@ -20,3 +24,16 @@ var (
 	ErrRespuestaDescuadrada = errors.New("verifactu: the AEAT answer does not line up with the batch sent")
 	ErrEsperaActiva         = errors.New("verifactu: waiting, cannot send more entries yet")
 )
+
+type ErrorEspera struct {
+	Restante time.Duration
+	Hasta    time.Time
+}
+
+func (e *ErrorEspera) Error() string {
+	return fmt.Sprintf("%s: must wait %s until %s", ErrEsperaActiva, e.Restante, e.Hasta)
+}
+
+func (e *ErrorEspera) Unwrap() error {
+	return ErrEsperaActiva
+}
