@@ -98,6 +98,13 @@ func ExampleEngine_Remitir() {
 	// Rellenar como en el ejemplo de Alta.
 	var factura record.RegistroAlta
 
+	if avisos := factura.Avisos(); len(avisos) > 0 {
+		fmt.Println("La AEAT acepta el registro, pero hay avisos que conviene revisar:")
+		for _, aviso := range avisos {
+			fmt.Println("Aviso:", aviso)
+		}
+	}
+
 	if _, err := engine.Alta(context.Background(), tenant, factura); err != nil {
 		panic(err)
 	}
