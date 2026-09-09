@@ -248,6 +248,79 @@ func TestRemitirEsperaActiva(t *testing.T) {
 
 }
 
+func TestRemitirEsperaActivaLlevaElTiempo(t *testing.T) {
+	reloj := &relojFalso{ahora: time.Date(2024, 1, 1, 12, 0, 0, 0, time.UTC)}
+	store := memory.New()
+	tf := &transporteFalso{}
+
+	engine, err := verifactu.New(verifactu.Config{Store: store, Transport: tf, Now: reloj.Now})
+
+	if err != nil {
+		t.Fatalf("Error creating engine: %v", err)
+	}
+
+	tenant := verifactu.Tenant{NIF: "89890001K", IDSistemaInformatico: "01"}
+
+	entry1, err := engine.Alta(context.Background(), tenant, validRegistroAlta("001"))
+
+	if err != nil {
+		t.Fatalf("Error in Alta entry1: %v", err)
+	}
+
+	entry2, err := engine.Alta(context.Background(), tenant, validRegistroAlta("002"))
+
+	if err != nil {
+		t.Fatalf("Error in Alta entry2: %v", err)
+	}
+
+	entry3, err := engine.Alta(context.Background(), tenant, validRegistroAlta("003"))
+
+	if err != nil {
+		t.Fatalf("Error in Alta entry3: %v", err)
+	}
+
+	tf.respuesta = record.RespuestaRegFactuSistemaFacturacion{
+		CSV:               "CSV-DE-PRUEBA",
+		TiempoEsperaEnvio: "120",
+		EstadoEnvio:       record.EstadoEnvioCorrecto,
+		RespuestaLinea: []record.RespuestaLinea{
+			respuestaLineaPara(entry1, record.TipoOperacionAlta, record.EstadoRegistroCorrecto),
+			respuestaLineaPara(entry2, record.TipoOperacionAlta, record.EstadoRegistroCorrecto),
+			respuestaLineaPara(entry3, record.TipoOperacionAlta, record.EstadoRegistroCorrecto),
+		},
+	}
+
+	envio, err := engine.Remitir(context.Background(), tenant)
+
+	if err != nil {
+		t.Fatalf("Error remitting: %v", err)
+	}
+
+	if envio == nil {
+		t.Fatalf("Expected envio to be non-nil")
+	}
+
+	_, err = engine.Alta(context.Background(), tenant, validRegistroAlta("004"))
+	if err != nil {
+		t.Fatalf("Error creating alta entry4: %v", err)
+	}
+
+	_, err = engine.Remitir(context.Background(), tenant)
+
+	if !errors.Is(err, verifactu.ErrEsperaActiva) {
+		t.Fatalf("Expected error %v, got %v", verifactu.ErrEsperaActiva, err)
+	}
+
+	var e *verifactu.ErrorEspera
+	if !errors.As(err, &e) {
+		t.Fatalf("Expected error to be of type *verifactu.ErrorEspera, got %T", err)
+	}
+
+	if e.Restante != 120*time.Second {
+		t.Errorf("Expected Restante to be 120s, got %s", e.Restante)
+	}
+}
+
 func TestRemitirTrasLaEspera(t *testing.T) {
 
 	testCases := []struct {

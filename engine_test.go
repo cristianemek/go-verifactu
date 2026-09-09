@@ -14,6 +14,17 @@ import (
 	"github.com/cristianemek/go-verifactu/store/memory"
 )
 
+func sistemaDePrueba() *record.SistemaInformatico {
+	return &record.SistemaInformatico{
+		NombreRazon:              "MI EMPRESA SL",
+		NIF:                      record.Ptr("B87654321"),
+		NombreSistemaInformatico: "CONFIG",
+		IdSistemaInformatico:     "01",
+		Version:                  "0.1.0",
+		NumeroInstalacion:        "0001",
+	}
+}
+
 func validRegistroAlta(numSerie string) record.RegistroAlta {
 	return record.RegistroAlta{
 		IDFactura: record.IDFacturaExpedida{
@@ -679,4 +690,75 @@ func TestOpcionesAnulacion(t *testing.T) {
 		t.Fatalf("Expected last entry to have sequence 2, got %d", ultimo.Secuencia)
 	}
 
+}
+
+func TestSistemaInformaticoDesdeConfig(t *testing.T) {
+	store := memory.New()
+	engine, err := verifactu.New(verifactu.Config{
+		Store:              store,
+		Now:                fixedTime,
+		SistemaInformatico: sistemaDePrueba(),
+	})
+
+	if err != nil {
+		t.Fatalf("Error creating engine: %v", err)
+	}
+
+	r := validRegistroAlta("001")
+
+	r.SistemaInformatico = record.SistemaInformatico{}
+
+	entry, err := engine.Alta(context.Background(), verifactu.Tenant{NIF: "89890001K", IDSistemaInformatico: "01"}, r)
+	if err != nil {
+		t.Fatalf("Error creating alta entry: %v", err)
+	}
+
+	if entry.Alta.SistemaInformatico.NombreSistemaInformatico != "CONFIG" {
+		t.Errorf("Expected NombreSistemaInformatico to be 'CONFIG', got %s", entry.Alta.SistemaInformatico.NombreSistemaInformatico)
+	}
+}
+
+func TestSistemaInformaticoConfigGanaAlRegistro(t *testing.T) {
+	store := memory.New()
+	engine, err := verifactu.New(verifactu.Config{
+		Store:              store,
+		Now:                fixedTime,
+		SistemaInformatico: sistemaDePrueba(),
+	})
+
+	if err != nil {
+		t.Fatalf("Error creating engine: %v", err)
+	}
+
+	r := validRegistroAlta("001")
+
+	entry, err := engine.Alta(context.Background(), verifactu.Tenant{NIF: "89890001K", IDSistemaInformatico: "01"}, r)
+	if err != nil {
+		t.Fatalf("Error creating alta entry: %v", err)
+	}
+
+	if entry.Alta.SistemaInformatico.NombreSistemaInformatico != "CONFIG" {
+		t.Errorf("Expected NombreSistemaInformatico to be 'CONFIG', got %s", entry.Alta.SistemaInformatico.NombreSistemaInformatico)
+	}
+}
+
+func TestSistemaInformaticoRequeridoSinConfig(t *testing.T) {
+	store := memory.New()
+	engine, err := verifactu.New(verifactu.Config{
+		Store: store,
+		Now:   fixedTime,
+	})
+
+	if err != nil {
+		t.Fatalf("Error creating engine: %v", err)
+	}
+
+	r := validRegistroAlta("001")
+
+	r.SistemaInformatico = record.SistemaInformatico{}
+
+	_, err = engine.Alta(context.Background(), verifactu.Tenant{NIF: "89890001K", IDSistemaInformatico: "01"}, r)
+	if !errors.Is(err, record.ErrValidation) {
+		t.Fatalf("Expected ErrValidation when SistemaInformatico is empty and no config provided, got %v", err)
+	}
 }
