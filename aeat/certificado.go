@@ -12,6 +12,8 @@ import (
 //
 //	openssl pkcs12 -in certificado.p12 -out certificado.pem -nodes
 //
+// Add -legacy if OpenSSL 3 rejects the .p12 cipher, as FNMT files often need.
+//
 // -nodes leaves the private key unencrypted on disk: restrict its permissions.
 func CargarPEM(rutaCert, rutaClave string) (tls.Certificate, error) {
 	cert, err := tls.LoadX509KeyPair(rutaCert, rutaClave)

@@ -58,6 +58,9 @@ vez:
 openssl pkcs12 -in certificado.p12 -out certificado.pem -nodes
 ```
 
+Si OpenSSL 3 se queja del cifrado del `.p12` (los de la FNMT suelen usar el
+antiguo), añade `-legacy` al comando.
+
 ## Aviso
 
 Esto no es un SIF, es una herramienta para construir uno. No lleva declaración
