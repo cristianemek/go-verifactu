@@ -22,7 +22,7 @@ type LineaEnvio struct {
 	Estado      record.EstadoRegistro
 	CodigoError string
 	Descripcion string
-	Duplicado   *record.RegistroDuplicado
+	Duplicado   *record.RegistroDuplicado `json:",omitempty"`
 	Secuencia   uint64
 }
 

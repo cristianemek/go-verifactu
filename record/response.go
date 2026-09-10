@@ -9,11 +9,11 @@ import (
 type RespuestaRegFactuSistemaFacturacion struct {
 	XMLName           xml.Name           `xml:"RespuestaRegFactuSistemaFacturacion"`
 	CSV               string             `xml:"CSV"`
-	DatosPresentacion *DatosPresentacion `xml:"DatosPresentacion,omitempty"`
+	DatosPresentacion *DatosPresentacion `xml:"DatosPresentacion,omitempty" json:",omitempty"`
 	Cabecera          CabeceraRespuesta  `xml:"Cabecera"`
 	TiempoEsperaEnvio string             `xml:"TiempoEsperaEnvio"`
 	EstadoEnvio       EstadoEnvio        `xml:"EstadoEnvio"`
-	RespuestaLinea    []RespuestaLinea   `xml:"RespuestaLinea"`
+	RespuestaLinea    []RespuestaLinea   `xml:"RespuestaLinea" json:",omitempty"`
 }
 
 // DatosPresentacion says who filed the submission and when, on the AEAT clock.
@@ -36,16 +36,16 @@ type RespuestaLinea struct {
 	EstadoRegistro           EstadoRegistro     `xml:"EstadoRegistro"`
 	CodigoErrorRegistro      string             `xml:"CodigoErrorRegistro"`
 	DescripcionErrorRegistro string             `xml:"DescripcionErrorRegistro"`
-	RegistroDuplicado        *RegistroDuplicado `xml:"RegistroDuplicado"`
+	RegistroDuplicado        *RegistroDuplicado `xml:"RegistroDuplicado" json:",omitempty"`
 }
 
 // OperacionRespuesta echoes the operation performed and the flags sent with it.
 // Named apart from verifactu.Operacion, which means something else.
 type OperacionRespuesta struct {
 	TipoOperacion     TipoOperacion  `xml:"TipoOperacion"`
-	Subsanacion       *SiNo          `xml:"Subsanacion,omitempty"`
-	RechazoPrevio     *RechazoPrevio `xml:"RechazoPrevio,omitempty"`
-	SinRegistroPrevio *SiNo          `xml:"SinRegistroPrevio,omitempty"`
+	Subsanacion       *SiNo          `xml:"Subsanacion,omitempty" json:",omitempty"`
+	RechazoPrevio     *RechazoPrevio `xml:"RechazoPrevio,omitempty" json:",omitempty"`
+	SinRegistroPrevio *SiNo          `xml:"SinRegistroPrevio,omitempty" json:",omitempty"`
 }
 
 // RegistroDuplicado is what the AEAT already had on file, sent only when a record

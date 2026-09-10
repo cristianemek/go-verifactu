@@ -43,8 +43,8 @@ func (id IDFactura) Equal(other IDFactura) bool {
 // Once written it is never modified.
 type Entry struct {
 	Operacion Operacion
-	Alta      *record.RegistroAlta
-	Anulacion *record.RegistroAnulacion
+	Alta      *record.RegistroAlta      `json:",omitempty"`
+	Anulacion *record.RegistroAnulacion `json:",omitempty"`
 	// Secuencia is the position in the chain, starting at 1. It lets the Store
 	// spot a forked chain.
 	Secuencia uint64
