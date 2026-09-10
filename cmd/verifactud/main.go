@@ -32,6 +32,9 @@ func main() {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("GET /healthz", srv.healthz)
+	mux.HandleFunc("POST /v1/{nif}/alta", srv.auth(srv.alta))
+	mux.HandleFunc("POST /v1/{nif}/anular", srv.auth(srv.anulacion))
+
 	slog.Info("Listening", "address", cfg.Listen)
 
 	err = http.ListenAndServe(cfg.Listen, mux)
@@ -79,5 +82,6 @@ func construirServidor(cfg *Config) (*servidor, error) {
 		engine:  engine,
 		cliente: cliente,
 		tenants: cfg.Tenants,
+		sistema: cfg.Sistema.IdSistemaInformatico,
 	}, nil
 }
