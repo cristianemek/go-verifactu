@@ -20,6 +20,11 @@ type servidor struct {
 	sistema string
 }
 
+type respuestaRegistro struct {
+	Entry  *verifactu.Entry `json:"entry"`
+	Avisos []string         `json:"avisos"`
+}
+
 func (s *servidor) healthz(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
@@ -61,7 +66,6 @@ func responderJSON(w http.ResponseWriter, status int, v any) {
 }
 
 func mapearError(err error) (int, string) {
-
 	var espera *verifactu.ErrorEspera
 
 	switch {
@@ -108,6 +112,12 @@ func (s *servidor) alta(w http.ResponseWriter, r *http.Request) {
 		opts = append(opts, verifactu.TrasRechazo())
 	}
 
+	avisos := []string{}
+
+	for _, a := range reg.Avisos() {
+		avisos = append(avisos, a.Error())
+	}
+
 	entry, err := s.engine.Alta(r.Context(), s.tenant(r), reg, opts...)
 
 	if err != nil {
@@ -119,7 +129,10 @@ func (s *servidor) alta(w http.ResponseWriter, r *http.Request) {
 		responderError(w, status, msg)
 		return
 	}
-	responderJSON(w, http.StatusCreated, entry)
+	responderJSON(w, http.StatusCreated, respuestaRegistro{
+		Entry:  entry,
+		Avisos: avisos,
+	})
 }
 
 func (s *servidor) anulacion(w http.ResponseWriter, r *http.Request) {
@@ -152,5 +165,8 @@ func (s *servidor) anulacion(w http.ResponseWriter, r *http.Request) {
 		responderError(w, status, msg)
 		return
 	}
-	responderJSON(w, http.StatusCreated, entry)
+	responderJSON(w, http.StatusCreated, respuestaRegistro{
+		Entry:  entry,
+		Avisos: []string{},
+	})
 }
