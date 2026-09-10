@@ -56,5 +56,11 @@ func cargarConfig(path string) (*Config, error) {
 		return nil, fmt.Errorf("missing tenants in config")
 	}
 
+	for nif, t := range cfg.Tenants {
+		if t.Token == "" {
+			return nil, fmt.Errorf("missing token for tenant %s", nif)
+		}
+	}
+
 	return &cfg, nil
 }
