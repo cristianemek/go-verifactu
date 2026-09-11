@@ -72,3 +72,45 @@ Ver el [Artículo 13 del RD 1007/2023](https://www.boe.es/buscar/act.php?id=BOE-
 ## Licencia
 
 [MIT](LICENSE). Se puede utilizar este proyecto para cualquier uso, incluso comercial, siempre que se haga referencia al uso y autoría del mismo. No se ofrece ninguna garantía de funcionamiento ni soporte. El uso de este proyecto es bajo la responsabilidad del usuario.
+
+## Servicio
+
+`cmd/verifactud` es un binario HTTP sobre la librería, para usarla desde
+cualquier lenguaje. Un fichero de configuración (`cmd/verifactud/verifactud.example.json`)
+con el certificado, el sistema informático y un token por NIF.
+
+```
+POST /v1/{nif}/alta      registra una factura (cuerpo: RegistroAlta en JSON)
+POST /v1/{nif}/anular    registra una anulación
+GET  /v1/{nif}/estado    devuelve un registro por serie y fecha
+GET  /v1/{nif}/conexion  prueba el certificado contra la AEAT sin enviar nada
+GET  /healthz
+```
+
+Todas menos `/healthz` piden `Authorization: Bearer <token>`. Las tres primeras
+responden `{"entry": ..., "avisos": [...]}`.
+
+El envío a la AEAT no tiene endpoint: el servicio remite lo pendiente cada
+`remision_cada` (60 s por defecto), respetando el tiempo de espera que la AEAT
+marca en cada respuesta. Cada envío queda en el log con su CSV.
+
+Con systemd:
+
+```
+go install github.com/cristianemek/go-verifactu/cmd/verifactud@latest
+sudo cp cmd/verifactud/verifactud.service /etc/systemd/system/
+sudo systemctl enable --now verifactud
+```
+
+La unidad espera el binario en `/usr/local/bin`, la configuración y el
+certificado en `/etc/verifactud`, y los datos en `/var/lib/verifactud`.
+
+Con Docker, con la configuración y el certificado en `/etc/verifactud`:
+
+```
+docker compose up -d
+```
+
+Para actualizar, `docker compose up -d --build`; los logs, `docker compose logs -f`.
+
+El directorio de datos es todo el estado: copiarlo es la copia de seguridad.
