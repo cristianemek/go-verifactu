@@ -1,12 +1,15 @@
 package main
 
 import (
+	"context"
 	"crypto/subtle"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/cristianemek/go-verifactu"
 	"github.com/cristianemek/go-verifactu/aeat"
@@ -219,18 +222,71 @@ func (s *servidor) estado(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func (s *servidor) remitir(ctx context.Context, nif string) error {
+	t, ok := s.tenants[nif]
+	if !ok {
+		return fmt.Errorf("tenant not found: %s", nif)
+	}
+
+	tenant := verifactu.Tenant{
+		NIF:                  nif,
+		IDSistemaInformatico: s.sistema,
+	}
+
+	envio, err := s.engine.Remitir(ctx, tenant, verifactu.ConObligado(t.Nombre))
+
+	if errors.Is(err, verifactu.ErrSinPendientes) {
+		return nil
+	}
+
+	var espera *verifactu.ErrorEspera
+
+	if errors.As(err, &espera) {
+		return nil
+	}
+
+	if err != nil {
+		return fmt.Errorf("error remitting: %w", err)
+	}
+
+	slog.Info("remitido", "nif", nif, "registros", len(envio.Lineas), "csv", envio.CSV, "estado", envio.EstadoEnvio)
+
+	return nil
+}
+
 func (s *servidor) conexion(w http.ResponseWriter, r *http.Request) {
 	err := s.cliente.ProbarConexion(r.Context())
 	if err != nil {
-		responderError(w, http.StatusInternalServerError, "Error al probar la conexión: "+err.Error())
-
 		status, msg := mapearError(err)
 		if status == http.StatusInternalServerError {
-			slog.Error("anulacion", "error", err)
+			slog.Error("conexion", "error", err)
 		}
 
 		responderError(w, status, msg)
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func (s *servidor) bucleRemision(ctx context.Context, cada time.Duration) {
+	ticker := time.NewTicker(cada)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+
+			ctxVuelta, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+
+			for nif := range s.tenants {
+				if err := s.remitir(ctxVuelta, nif); err != nil {
+					slog.Error("remitir", "nif", nif, "error", err)
+				}
+			}
+
+			cancel()
+		}
+	}
 }

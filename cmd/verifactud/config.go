@@ -36,6 +36,10 @@ func cargarConfig(path string) (*Config, error) {
 		return nil, err
 	}
 
+	if cfg.RemisionCada == "" {
+		cfg.RemisionCada = "60s"
+	}
+
 	if cfg.Listen == "" {
 		return nil, fmt.Errorf("missing listen address in config")
 	}
