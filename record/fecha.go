@@ -39,7 +39,7 @@ func (f *Fecha) UnmarshalJSON(b []byte) error {
 		return err
 	}
 
-	t, err := time.Parse(fechaFormat, s)
+	t, err := ParseFecha(s)
 	if err != nil {
 		return err
 	}
@@ -80,9 +80,7 @@ func (f *Fecha) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 		return err
 	}
 
-	s = strings.TrimSpace(s)
-
-	t, err := time.Parse(fechaFormat, s)
+	t, err := ParseFecha(s)
 	if err != nil {
 		return err
 	}
@@ -104,4 +102,13 @@ func (f *FechaHora) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 	}
 	*f = FechaHora(t)
 	return nil
+}
+
+func ParseFecha(s string) (Fecha, error) {
+	s = strings.TrimSpace(s)
+	t, err := time.Parse(fechaFormat, s)
+	if err != nil {
+		return Fecha{}, err
+	}
+	return Fecha(t), nil
 }
