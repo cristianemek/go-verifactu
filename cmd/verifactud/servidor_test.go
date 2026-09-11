@@ -53,6 +53,19 @@ func decodificar(t *testing.T, rec *httptest.ResponseRecorder) respuestaRegistro
 	return resp
 }
 
+func peticionGET(s *servidor, query string) *httptest.ResponseRecorder {
+	req := httptest.NewRequest(http.MethodGet, "/v1/89890001K/estado?"+query, nil)
+
+	req.SetPathValue("nif", "89890001K")
+	req.Header.Set("Authorization", "Bearer secreto")
+
+	rec := httptest.NewRecorder()
+
+	s.auth(s.estado).ServeHTTP(rec, req)
+
+	return rec
+}
+
 func servidorDePrueba(t *testing.T) *servidor {
 	t.Helper()
 
@@ -263,5 +276,74 @@ func TestAltaConAvisos(t *testing.T) {
 
 	if !strings.Contains(resp.Avisos[0], "2005") {
 		t.Fatalf("Expected aviso about base imponible, got %s", resp.Avisos[0])
+	}
+}
+
+func TestEstado(t *testing.T) {
+	s := servidorDePrueba(t)
+
+	rec := peticion(s, facturaJSON)
+
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("Expected status %d, got %d, body: %s", http.StatusCreated, rec.Code, rec.Body.String())
+	}
+
+	testCases := []struct {
+		name           string
+		query          string
+		expectedStatus int
+	}{
+		{
+			name:           "existente",
+			query:          "serie=F-2026-001&fecha=10-09-2026",
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name:           "sin serie",
+			query:          "fecha=10-09-2026",
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:           "fecha en ISO",
+			query:          "serie=F-2026-001&fecha=2026-09-10",
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:           "op invalida",
+			query:          "serie=F-2026-001&fecha=10-09-2026&op=foo",
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:           "no existe",
+			query:          "serie=F-2026-999&fecha=10-09-2026",
+			expectedStatus: http.StatusNotFound,
+		},
+		{
+			name:           "anulacion inexistente",
+			query:          "serie=F-2026-001&fecha=10-09-2026&op=anulacion",
+			expectedStatus: http.StatusNotFound,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			rec := peticionGET(s, tc.query)
+
+			if rec.Code != tc.expectedStatus {
+				t.Errorf("Expected status %d, got %d, body: %s", tc.expectedStatus, rec.Code, rec.Body.String())
+			}
+
+			if tc.expectedStatus == http.StatusOK {
+				resp := decodificar(t, rec)
+				if resp.Entry == nil {
+					t.Fatalf("Expected entry, got nil")
+				}
+
+				if resp.Entry.Secuencia != 1 {
+					t.Fatalf("Expected sequence 1, got %d", resp.Entry.Secuencia)
+				}
+			}
+
+		})
 	}
 }

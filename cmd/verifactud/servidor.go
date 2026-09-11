@@ -159,13 +159,61 @@ func (s *servidor) anulacion(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		status, msg := mapearError(err)
 		if status == http.StatusInternalServerError {
-			slog.Error("alta", "error", err)
+			slog.Error("anulacion", "error", err)
 		}
 
 		responderError(w, status, msg)
 		return
 	}
 	responderJSON(w, http.StatusCreated, respuestaRegistro{
+		Entry:  entry,
+		Avisos: []string{},
+	})
+}
+
+func (s *servidor) estado(w http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query()
+	serie := q.Get("serie")
+	fecha := q.Get("fecha")
+	op := q.Get("op")
+
+	if serie == "" || fecha == "" {
+		responderError(w, http.StatusBadRequest, "Missing required query parameters: serie and fecha")
+		return
+	}
+
+	f, err := record.ParseFecha(fecha)
+	if err != nil {
+		responderError(w, http.StatusBadRequest, "Invalid date format: "+err.Error())
+		return
+	}
+
+	if op == "" {
+		op = string(verifactu.OperacionAlta)
+	}
+
+	if op != string(verifactu.OperacionAlta) && op != string(verifactu.OperacionAnulacion) {
+		responderError(w, http.StatusBadRequest, "Invalid operation type: "+op)
+		return
+	}
+
+	id := verifactu.IDFactura{
+		NIF:      r.PathValue("nif"),
+		NumSerie: serie,
+		Fecha:    f,
+	}
+
+	entry, err := s.engine.Estado(r.Context(), s.tenant(r), id, verifactu.Operacion(op))
+
+	if err != nil {
+		status, msg := mapearError(err)
+		if status == http.StatusInternalServerError {
+			slog.Error("estado", "error", err)
+		}
+		responderError(w, status, msg)
+		return
+	}
+	responderJSON(w, http.StatusOK, respuestaRegistro{
 		Entry:  entry,
 		Avisos: []string{},
 	})

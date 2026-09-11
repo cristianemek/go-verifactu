@@ -34,6 +34,7 @@ func main() {
 	mux.HandleFunc("GET /healthz", srv.healthz)
 	mux.HandleFunc("POST /v1/{nif}/alta", srv.auth(srv.alta))
 	mux.HandleFunc("POST /v1/{nif}/anular", srv.auth(srv.anulacion))
+	mux.HandleFunc("GET /v1/{nif}/estado", srv.auth(srv.estado))
 
 	slog.Info("Listening", "address", cfg.Listen)
 
