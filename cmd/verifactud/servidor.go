@@ -218,3 +218,19 @@ func (s *servidor) estado(w http.ResponseWriter, r *http.Request) {
 		Avisos: []string{},
 	})
 }
+
+func (s *servidor) conexion(w http.ResponseWriter, r *http.Request) {
+	err := s.cliente.ProbarConexion(r.Context())
+	if err != nil {
+		responderError(w, http.StatusInternalServerError, "Error al probar la conexión: "+err.Error())
+
+		status, msg := mapearError(err)
+		if status == http.StatusInternalServerError {
+			slog.Error("anulacion", "error", err)
+		}
+
+		responderError(w, status, msg)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
