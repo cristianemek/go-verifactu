@@ -1,0 +1,9 @@
+.git
+*.md
+docs/
+testdata/
+cmd/verifactud/datos/
+cmd/verifactud/*.pem
+cmd/verifactud/*.json
+*.p12
+*.exe

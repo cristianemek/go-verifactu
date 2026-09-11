@@ -1,0 +1,26 @@
+[Unit]
+Description=verifactud - registro y remision VERI*FACTU
+Documentation=https://github.com/cristianemek/go-verifactu
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=verifactud
+Group=verifactud
+WorkingDirectory=/var/lib/verifactud
+ExecStart=/usr/local/bin/verifactud -config /etc/verifactud/verifactud.json
+Restart=on-failure
+RestartSec=5
+
+KillSignal=SIGTERM
+TimeoutStopSec=150
+
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/var/lib/verifactud
+
+[Install]
+WantedBy=multi-user.target

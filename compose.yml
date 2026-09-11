@@ -1,0 +1,13 @@
+services:
+  verifactud:
+    build: .
+    ports:
+      - "9009:9009"
+    volumes:
+      - /etc/verifactud:/etc/verifactud:ro
+      - verifactud-datos:/var/lib/verifactud
+    restart: unless-stopped
+    stop_grace_period: 150s
+
+volumes:
+  verifactud-datos:
