@@ -2,6 +2,7 @@ package memory
 
 import (
 	"context"
+	"slices"
 	"sync"
 
 	"github.com/cristianemek/go-verifactu"
@@ -136,4 +137,13 @@ func (s *Store) UltimoEnvio(ctx context.Context, t verifactu.Tenant) (*verifactu
 	}
 
 	return envios[len(envios)-1], nil
+}
+
+// Cadenas implements [verifactu.Store].
+func (s *Store) Cadena(ctx context.Context, t verifactu.Tenant) ([]*verifactu.Entry, error) {
+	s.mu.RLock()
+
+	defer s.mu.RUnlock()
+
+	return slices.Clone(s.cadenas[t]), nil
 }

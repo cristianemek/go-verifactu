@@ -23,6 +23,10 @@ func (s storeFalso) Buscar(ctx context.Context, t Tenant, id IDFactura, op Opera
 	return nil, ErrNoEncontrado
 }
 
+func (s storeFalso) Cadena(ctx context.Context, t Tenant) ([]*Entry, error) {
+	return nil, nil
+}
+
 // AnexarEnvio implements [verifactu.Store].
 func (s storeFalso) AnexarEnvio(ctx context.Context, t Tenant, envio *Envio) error {
 	panic("unimplemented")

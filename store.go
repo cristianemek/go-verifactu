@@ -17,6 +17,9 @@ type Store interface {
 	// Buscar returns that entry, or ErrNoEncontrado.
 	Buscar(ctx context.Context, t Tenant, idFactura IDFactura, op Operacion) (*Entry, error)
 
+	// Cadenas returns all entries in chain order. An empty result if the chain is empty.
+	Cadena(ctx context.Context, t Tenant) ([]*Entry, error)
+
 	// Pendientes returns what is not settled yet, in chain order. A limite of zero
 	// or less means no limit, and an empty result is not an error.
 	Pendientes(ctx context.Context, t Tenant, limite int) ([]*Entry, error)

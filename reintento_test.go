@@ -36,6 +36,10 @@ func (s *storeConflictivo) Buscar(ctx context.Context, t verifactu.Tenant, idFac
 	return nil, verifactu.ErrNoEncontrado
 }
 
+func (s *storeConflictivo) Cadena(ctx context.Context, t verifactu.Tenant) ([]*verifactu.Entry, error) {
+	return nil, nil
+}
+
 // Pendientes implements [verifactu.Store].
 func (s *storeConflictivo) Pendientes(ctx context.Context, t verifactu.Tenant, limite int) ([]*verifactu.Entry, error) {
 	panic("unimplemented")

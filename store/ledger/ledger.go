@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"sync"
 
@@ -32,6 +33,15 @@ type Store struct {
 	cadenas    map[verifactu.Tenant][]*verifactu.Entry
 	envios     map[verifactu.Tenant][]*verifactu.Envio
 	liquidados map[verifactu.Tenant]map[uint64]bool
+}
+
+// Cadenas implements [verifactu.Store].
+func (s *Store) Cadena(ctx context.Context, t verifactu.Tenant) ([]*verifactu.Entry, error) {
+	s.mu.RLock()
+
+	defer s.mu.RUnlock()
+
+	return slices.Clone(s.cadenas[t]), nil
 }
 
 // New opens the directory and rebuilds the index from its files. One process
