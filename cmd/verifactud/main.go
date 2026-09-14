@@ -120,6 +120,21 @@ func construirServidor(cfg *Config) (*servidor, error) {
 		return nil, fmt.Errorf("error creating engine: %w", err)
 	}
 
+	for nif := range cfg.Tenants {
+		tenant := verifactu.Tenant{NIF: nif, IDSistemaInformatico: cfg.Sistema.IdSistemaInformatico}
+
+		cadena, err := store.Cadena(context.Background(), tenant)
+
+		if err != nil {
+			return nil, fmt.Errorf("error retrieving chain for tenant %s: %w", nif, err)
+		}
+
+		if err := verifactu.VerificarCadena(cadena); err != nil {
+			return nil, fmt.Errorf("error verifying chain for tenant %s: %w", nif, err)
+		}
+
+	}
+
 	return &servidor{
 		engine:  engine,
 		cliente: cliente,
