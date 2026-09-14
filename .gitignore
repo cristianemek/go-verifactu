@@ -57,3 +57,6 @@ cmd/verifactud/datos/
 cmd/verifactud/*.pem
 cmd/verifactud/*.key
 cmd/verifactud/*.crt
+
+# configuracion local para probar con Docker (certificado y tokens)
+docker-local/

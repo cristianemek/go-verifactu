@@ -7,3 +7,5 @@ cmd/verifactud/*.pem
 cmd/verifactud/*.json
 *.p12
 *.exe
+docker-local/
+.env
