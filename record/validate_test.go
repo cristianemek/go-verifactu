@@ -373,6 +373,12 @@ func TestValidateDestinatarios(t *testing.T) {
 				}
 			},
 		},
+		{
+			name: "Destinatarios without IDDestinatario",
+			mod: func(r *RegistroAlta) {
+				r.Destinatarios = &Destinatarios{}
+			},
+		},
 	}
 
 	for _, tc := range testCases {

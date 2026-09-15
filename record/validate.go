@@ -78,6 +78,10 @@ func (r RegistroAlta) Validate() error {
 	}
 
 	if r.Destinatarios != nil {
+		if len(r.Destinatarios.IDDestinatario) == 0 {
+			errs = append(errs, fmt.Errorf("%w: Destinatarios.IDDestinatario must have at least one entry", ErrValidation))
+		}
+
 		for i, d := range r.Destinatarios.IDDestinatario {
 			if d.NIF == nil && d.IDOtro == nil || (d.NIF != nil && d.IDOtro != nil) {
 				errs = append(errs, fmt.Errorf("%w: Destinatarios.IDDestinatario[%d] must have either NIF or IDOtro", ErrValidation, i))
