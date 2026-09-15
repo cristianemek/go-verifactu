@@ -394,3 +394,86 @@ func TestPendientes(t *testing.T) {
 		})
 	}
 }
+
+func TestEnvioDe(t *testing.T) {
+	s := New()
+
+	tenant := buildTenant("89890001K")
+
+	envio := &verifactu.Envio{
+		Lineas: []verifactu.LineaEnvio{
+			buildLinea(1, record.EstadoRegistroCorrecto),
+			buildLinea(2, record.EstadoRegistroAceptadoConErrores),
+		},
+		CSV: "CSV-1",
+	}
+
+	err := s.AnexarEnvio(context.Background(), tenant, envio)
+	if err != nil {
+		t.Fatalf("AnexarEnvio() = %v, want nil", err)
+	}
+
+	err = s.AnexarEnvio(context.Background(), tenant, &verifactu.Envio{
+		Lineas: []verifactu.LineaEnvio{
+			buildLinea(3, record.EstadoRegistroIncorrecto),
+		},
+		CSV: "CSV-2",
+	})
+
+	if err != nil {
+		t.Fatalf("AnexarEnvio() = %v, want nil", err)
+	}
+
+	testCases := []struct {
+		secuencia uint64
+		want      *verifactu.Envio
+		err       error
+	}{
+		{
+			secuencia: 1,
+			want: &verifactu.Envio{
+				CSV: "CSV-1",
+			},
+			err: nil,
+		},
+		{
+			secuencia: 2,
+			want: &verifactu.Envio{
+				CSV: "CSV-1",
+			},
+			err: nil,
+		},
+		{
+			secuencia: 3,
+			want: &verifactu.Envio{
+				CSV: "CSV-2",
+			},
+			err: nil,
+		},
+		{
+			secuencia: 4,
+			want:      nil,
+			err:       verifactu.ErrNoEncontrado,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(fmt.Sprintf("Secuencia %d", tc.secuencia), func(t *testing.T) {
+			envio, err := s.EnvioDe(context.Background(), tenant, tc.secuencia)
+
+			if !errors.Is(err, tc.err) {
+				t.Fatalf("EnvioDe() = %v, want %v", err, tc.err)
+			}
+
+			if tc.err != nil {
+				return
+			}
+
+			if envio.CSV != tc.want.CSV {
+				t.Errorf("EnvioDe() CSV = %q, want %q", envio.CSV, tc.want.CSV)
+			}
+
+		})
+	}
+
+}
