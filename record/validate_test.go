@@ -559,3 +559,31 @@ func TestValidateVariantesValidas(t *testing.T) {
 		})
 	}
 }
+
+func TestValidateIdSistemaInformatico(t *testing.T) {
+	testCases := []struct {
+		id     string
+		valido bool
+	}{
+		{"01", true},
+		{"A1", true},
+		{"1A", true},
+		{"", false},
+		{"1", false},
+		{"001", false},
+		{"Ñ1", false},
+		{"Ñ", false},
+		{"a1", false},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.id, func(t *testing.T) {
+			rec := validRegistroAlta()
+			rec.SistemaInformatico.IdSistemaInformatico = tc.id
+			err := rec.Validate()
+			if (err == nil) != tc.valido {
+				t.Errorf("Expected validity %v for IdSistemaInformatico '%s', got error: %v", tc.valido, tc.id, err)
+			}
+		})
+	}
+}

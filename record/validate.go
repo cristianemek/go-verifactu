@@ -49,7 +49,7 @@ func (r RegistroAlta) Validate() error {
 		errs = append(errs, fmt.Errorf("%w: Huella must be 64 characters long", ErrValidation))
 	}
 
-	if len(r.SistemaInformatico.IdSistemaInformatico) > 2 {
+	if !idSistemaValido(r.SistemaInformatico.IdSistemaInformatico) {
 		errs = append(errs, fmt.Errorf("%w: IdSistemaInformatico must be 2 characters long", ErrValidation))
 	}
 
@@ -127,7 +127,7 @@ func (r RegistroAnulacion) Validate() error {
 		errs = append(errs, fmt.Errorf("%w: SistemaInformatico NIF is invalid", ErrValidation))
 	}
 
-	if len(r.SistemaInformatico.IdSistemaInformatico) > 2 {
+	if !idSistemaValido(r.SistemaInformatico.IdSistemaInformatico) {
 		errs = append(errs, fmt.Errorf("%w: IdSistemaInformatico must be 2 characters long", ErrValidation))
 	}
 
@@ -136,4 +136,19 @@ func (r RegistroAnulacion) Validate() error {
 
 func validNif(nif string) bool {
 	return len(nif) == 9
+}
+
+func idSistemaValido(s string) bool {
+	if len(s) != 2 {
+		return false
+	}
+
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		if (c < 'A' || c > 'Z') && (c < '0' || c > '9') {
+			return false
+		}
+	}
+
+	return true
 }
