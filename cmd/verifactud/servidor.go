@@ -231,9 +231,38 @@ func (s *servidor) estado(w http.ResponseWriter, r *http.Request) {
 		responderError(w, status, msg)
 		return
 	}
+
+	aeat := &resultadoAEAT{
+		Estado: "Pendiente",
+	}
+
+	envio, err := s.engine.EnvioDe(r.Context(), s.tenant(r), entry.Secuencia)
+
+	switch {
+	case errors.Is(err, verifactu.ErrNoEncontrado):
+	case err != nil:
+		slog.Error("estado", "error", err)
+		responderError(w, http.StatusInternalServerError, "Internal Server Error")
+		return
+	default:
+		for _, linea := range envio.Lineas {
+			if linea.Secuencia == entry.Secuencia {
+				aeat.Estado = string(linea.Estado)
+				aeat.Codigo = linea.CodigoError
+				aeat.Descripcion = linea.Descripcion
+
+				if linea.Estado != record.EstadoRegistroIncorrecto {
+					aeat.CSV = envio.CSV
+				}
+				break
+			}
+		}
+	}
+
 	responderJSON(w, http.StatusOK, respuestaRegistro{
 		Entry:  entry,
 		Avisos: []string{},
+		AEAT:   aeat,
 	})
 }
 

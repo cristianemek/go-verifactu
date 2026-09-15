@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -66,8 +67,10 @@ func peticionGET(s *servidor, query string) *httptest.ResponseRecorder {
 	return rec
 }
 
-func servidorDePrueba(t *testing.T) *servidor {
+func servidorConStore(t *testing.T) (*servidor, *memory.Store) {
 	t.Helper()
+
+	store := memory.New()
 
 	sistema := record.SistemaInformatico{
 		NIF:                         record.Ptr("89890001K"),
@@ -81,7 +84,7 @@ func servidorDePrueba(t *testing.T) *servidor {
 		IndicadorMultiplesOT:        record.SiNoSi,
 	}
 
-	engine, err := verifactu.New(verifactu.Config{Store: memory.New(), Now: func() time.Time { return time.Date(2026, 1, 1, 12, 0, 0, 0, time.UTC) }, SistemaInformatico: &sistema})
+	engine, err := verifactu.New(verifactu.Config{Store: store, Now: func() time.Time { return time.Date(2026, 1, 1, 12, 0, 0, 0, time.UTC) }, SistemaInformatico: &sistema})
 
 	if err != nil {
 		t.Fatalf("Error creating engine: %v", err)
@@ -91,7 +94,7 @@ func servidorDePrueba(t *testing.T) *servidor {
 		engine:  engine,
 		tenants: map[string]TenantConfig{"89890001K": {Nombre: "EMPRESA DE PRUEBAS SL", Token: "secreto"}},
 		sistema: "01",
-	}
+	}, store
 }
 
 func peticion(s *servidor, cuerpo string) *httptest.ResponseRecorder {
@@ -181,7 +184,7 @@ func TestServidor(t *testing.T) {
 }
 
 func TestAlta(t *testing.T) {
-	s := servidorDePrueba(t)
+	s, _ := servidorConStore(t)
 
 	testCases := []struct {
 		name           string
@@ -219,7 +222,7 @@ func TestAlta(t *testing.T) {
 }
 
 func TestAltaIdempotente(t *testing.T) {
-	s := servidorDePrueba(t)
+	s, _ := servidorConStore(t)
 
 	rec := peticion(s, facturaJSON)
 
@@ -260,7 +263,7 @@ func TestAltaIdempotente(t *testing.T) {
 }
 
 func TestAltaConAvisos(t *testing.T) {
-	s := servidorDePrueba(t)
+	s, _ := servidorConStore(t)
 
 	factura := strings.Replace(facturaJSON, `"BaseImponibleOimporteNoSujeto": 10000`, `"BaseImponibleOimporteNoSujeto": 0`, 1)
 
@@ -286,7 +289,7 @@ func TestAltaConAvisos(t *testing.T) {
 }
 
 func TestEstado(t *testing.T) {
-	s := servidorDePrueba(t)
+	s, _ := servidorConStore(t)
 
 	rec := peticion(s, facturaJSON)
 
@@ -352,4 +355,86 @@ func TestEstado(t *testing.T) {
 
 		})
 	}
+}
+
+func TestEstadoAEAT(t *testing.T) {
+
+	testCases := []struct {
+		name   string
+		envio  *verifactu.Envio
+		estado string
+		codigo string
+		csv    string
+	}{
+		{
+			name:   "pendiente",
+			envio:  nil,
+			estado: "Pendiente",
+		},
+		{
+			name: "correcta",
+			envio: &verifactu.Envio{
+				Lineas: []verifactu.LineaEnvio{
+					{
+						Estado:    record.EstadoRegistroCorrecto,
+						Secuencia: 1,
+					},
+				},
+				CSV: "A-1",
+			},
+			estado: "Correcto",
+			csv:    "A-1",
+		},
+		{
+			name: "rechazada",
+			envio: &verifactu.Envio{
+				Lineas: []verifactu.LineaEnvio{
+					{Secuencia: 1, Estado: record.EstadoRegistroIncorrecto, CodigoError: "1189", Descripcion: "Faltan destinatarios"},
+				},
+				CSV: "A-1",
+			},
+			estado: "Incorrecto",
+			codigo: "1189",
+			csv:    "",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			s, store := servidorConStore(t)
+
+			rec := peticion(s, facturaJSON)
+
+			if rec.Code != http.StatusCreated {
+				t.Fatalf("Expected status %d, got %d, body: %s", http.StatusCreated, rec.Code, rec.Body.String())
+			}
+
+			if tc.envio != nil {
+				tenant := verifactu.Tenant{NIF: "89890001K", IDSistemaInformatico: "01"}
+				if err := store.AnexarEnvio(context.Background(), tenant, tc.envio); err != nil {
+					t.Fatalf("Error anexando envio: %v", err)
+				}
+
+			}
+
+			rec = peticionGET(s, "serie=F-2026-001&fecha=10-09-2026")
+			resp := decodificar(t, rec)
+
+			if resp.AEAT == nil {
+				t.Fatalf("Expected aeat block, got nil")
+			}
+
+			if resp.AEAT.Estado != tc.estado {
+				t.Errorf("Expected estado %s, got %s", tc.estado, resp.AEAT.Estado)
+			}
+			if resp.AEAT.Codigo != tc.codigo {
+				t.Errorf("Expected codigo %s, got %s", tc.codigo, resp.AEAT.Codigo)
+			}
+			if resp.AEAT.CSV != tc.csv {
+				t.Errorf("Expected csv %s, got %s", tc.csv, resp.AEAT.CSV)
+			}
+
+		})
+	}
+
 }
