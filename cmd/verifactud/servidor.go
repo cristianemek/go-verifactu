@@ -287,6 +287,8 @@ func (s *servidor) bucleRemision(ctx context.Context, cada time.Duration) {
 	ticker := time.NewTicker(cada)
 	defer ticker.Stop()
 
+	bloqueados := map[string]bool{}
+
 	for {
 		select {
 		case <-ctx.Done():
@@ -296,8 +298,17 @@ func (s *servidor) bucleRemision(ctx context.Context, cada time.Duration) {
 			ctxVuelta, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 
 			for nif := range s.tenants {
+				if bloqueados[nif] {
+					continue
+				}
+
 				if err := s.remitir(ctxVuelta, nif); err != nil {
-					slog.Error("remitir", "nif", nif, "error", err)
+					if errors.Is(err, verifactu.ErrFaultCliente) {
+						bloqueados[nif] = true
+						slog.Error("Fault del cliente: no se reintenta hasta reiniciar", "nif", nif, "error", err, "bloqueado", true)
+					} else {
+						slog.Error("remitir", "nif", nif, "error", err)
+					}
 				}
 			}
 
