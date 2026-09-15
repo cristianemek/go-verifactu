@@ -21,6 +21,7 @@ type servidor struct {
 	cliente *aeat.Client
 	tenants map[string]TenantConfig
 	sistema string
+	avisar  chan struct{}
 }
 
 type respuestaRegistro struct {
@@ -132,6 +133,12 @@ func (s *servidor) alta(w http.ResponseWriter, r *http.Request) {
 		responderError(w, status, msg)
 		return
 	}
+
+	select {
+	case s.avisar <- struct{}{}:
+	default:
+	}
+
 	responderJSON(w, http.StatusCreated, respuestaRegistro{
 		Entry:  entry,
 		Avisos: avisos,
@@ -168,6 +175,12 @@ func (s *servidor) anulacion(w http.ResponseWriter, r *http.Request) {
 		responderError(w, status, msg)
 		return
 	}
+
+	select {
+	case s.avisar <- struct{}{}:
+	default:
+	}
+
 	responderJSON(w, http.StatusCreated, respuestaRegistro{
 		Entry:  entry,
 		Avisos: []string{},
@@ -294,29 +307,34 @@ func (s *servidor) bucleRemision(ctx context.Context, cada time.Duration) {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-
-			ctxVuelta, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
-
-			for nif := range s.tenants {
-				if bloqueados[nif] {
-					continue
-				}
-
-				if err := s.remitir(ctxVuelta, nif); err != nil {
-					if errors.Is(err, verifactu.ErrFaultCliente) {
-						bloqueados[nif] = true
-						slog.Error("Fault del cliente: no se reintenta hasta reiniciar", "nif", nif, "error", err, "bloqueado", true)
-					} else {
-						slog.Error("remitir", "nif", nif, "error", err)
-					}
-				}
-			}
-
-			cancel()
+			s.vuelta(bloqueados)
+		case <-s.avisar:
+			s.vuelta(bloqueados)
 		}
 	}
 }
 
 func nifDeRuta(r *http.Request) string {
 	return strings.ToUpper(r.PathValue("nif"))
+}
+
+func (s *servidor) vuelta(bloqueados map[string]bool) {
+	ctxVuelta, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+
+	for nif := range s.tenants {
+		if bloqueados[nif] {
+			continue
+		}
+
+		if err := s.remitir(ctxVuelta, nif); err != nil {
+			if errors.Is(err, verifactu.ErrFaultCliente) {
+				bloqueados[nif] = true
+				slog.Error("Fault del cliente: no se reintenta hasta reiniciar", "nif", nif, "error", err, "bloqueado", true)
+			} else {
+				slog.Error("remitir", "nif", nif, "error", err)
+			}
+		}
+	}
+
+	cancel()
 }
