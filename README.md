@@ -88,11 +88,21 @@ GET  /healthz
 ```
 
 Todas menos `/healthz` piden `Authorization: Bearer <token>`. Las tres primeras
-responden `{"entry": ..., "avisos": [...]}`.
+responden `{"entry": ..., "avisos": [...]}`, y `/estado` añade lo que contestó
+la AEAT:
 
-El envío a la AEAT no tiene endpoint: el servicio remite lo pendiente cada
-`remision_cada` (60 s por defecto), respetando el tiempo de espera que la AEAT
-marca en cada respuesta. Cada envío queda en el log con su CSV.
+```json
+"aeat": {"estado": "Pendiente"}
+"aeat": {"estado": "Correcto", "csv": "A-3JLMAM3L8XVZD9"}
+"aeat": {"estado": "Incorrecto", "codigo": "1189", "descripcion": "..."}
+```
+
+Una factura rechazada se corrige enviándola otra vez con `?tras_rechazo`.
+
+El envío a la AEAT no tiene endpoint: cada alta se remite al momento, salvo que
+la AEAT haya marcado un tiempo de espera; entonces lo pendiente sale junto al
+acabar la espera. Por si acaso, el servicio revisa la cola cada `remision_cada`
+(60 s por defecto). Cada envío queda en el log con su CSV y los rechazos.
 
 Con systemd:
 
