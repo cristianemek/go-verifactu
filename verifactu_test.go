@@ -42,6 +42,10 @@ func (s storeFalso) UltimoEnvio(ctx context.Context, t Tenant) (*Envio, error) {
 	panic("unimplemented")
 }
 
+func (s storeFalso) EnvioDe(ctx context.Context, t Tenant, secuencia uint64) (*Envio, error) {
+	return nil, ErrNoEncontrado
+}
+
 const (
 	goRoutines = 100
 )

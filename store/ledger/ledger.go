@@ -398,3 +398,22 @@ func (s *Store) UltimoEnvio(ctx context.Context, t verifactu.Tenant) (*verifactu
 
 	return envios[len(envios)-1], nil
 }
+
+// EnvioDe implements [verifactu.Store].
+func (s *Store) EnvioDe(ctx context.Context, t verifactu.Tenant, secuencia uint64) (*verifactu.Envio, error) {
+	s.mu.RLock()
+
+	defer s.mu.RUnlock()
+
+	for i := len(s.envios[t]) - 1; i >= 0; i-- {
+		envio := s.envios[t][i]
+
+		for _, linea := range envio.Lineas {
+			if linea.Secuencia == secuencia {
+				return envio, nil
+			}
+		}
+	}
+
+	return nil, verifactu.ErrNoEncontrado
+}

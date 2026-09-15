@@ -60,6 +60,10 @@ func (s *storeConflictivo) UltimoEnvio(ctx context.Context, t verifactu.Tenant) 
 	panic("unimplemented")
 }
 
+func (s *storeConflictivo) EnvioDe(ctx context.Context, t verifactu.Tenant, secuencia uint64) (*verifactu.Envio, error) {
+	return nil, verifactu.ErrNoEncontrado
+}
+
 var _ verifactu.Store = (*storeConflictivo)(nil)
 
 func TestAltaReintentaTrasConflicto(t *testing.T) {

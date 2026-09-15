@@ -377,3 +377,45 @@ func TestLedgerConcurrenciaMantieneElOrden(t *testing.T) {
 	}
 
 }
+
+func TestEnvioDeTrasReabrir(t *testing.T) {
+	dir := t.TempDir()
+
+	store, err := ledger.New(dir)
+	if err != nil {
+		t.Fatalf("Error creating ledger: %v", err)
+	}
+
+	tenant := verifactu.Tenant{NIF: "89890001K", IDSistemaInformatico: "01"}
+
+	err = store.AnexarEnvio(context.Background(), tenant, &verifactu.Envio{
+		CSV: "CSV-1",
+		Lineas: []verifactu.LineaEnvio{
+			{Secuencia: 1, Estado: record.EstadoRegistroCorrecto},
+		},
+	})
+
+	if err != nil {
+		t.Fatalf("Error calling AnexarEnvio: %v", err)
+	}
+
+	store, err = ledger.New(dir)
+
+	if err != nil {
+		t.Fatalf("Error creating ledger: %v", err)
+	}
+
+	envio, err := store.EnvioDe(context.Background(), tenant, 1)
+	if err != nil {
+		t.Fatalf("Error calling EnvioDe: %v", err)
+	}
+
+	if envio == nil {
+		t.Fatalf("Expected envio, got nil")
+	}
+
+	if envio.CSV != "CSV-1" {
+		t.Fatalf("Expected envio CSV to be 'CSV-1', got '%s'", envio.CSV)
+	}
+
+}
