@@ -23,7 +23,7 @@ func ExampleEngine_Alta() {
 			NombreRazon:                 "Empresa",
 			NIF:                         record.Ptr("A12345678"),
 			NombreSistemaInformatico:    "go-verifactu",
-			IdSistemaInformatico:        "1",
+			IdSistemaInformatico:        "01",
 			Version:                     "0.1",
 			NumeroInstalacion:           "1",
 			TipoUsoPosibleSoloVerifactu: record.SiNoNo,
@@ -35,7 +35,7 @@ func ExampleEngine_Alta() {
 		panic(err)
 	}
 
-	tenant := verifactu.Tenant{NIF: "A12345678", IDSistemaInformatico: "1"}
+	tenant := verifactu.Tenant{NIF: "A12345678", IDSistemaInformatico: "01"}
 
 	factura := record.RegistroAlta{
 		IDFactura:            record.IDFacturaExpedida{IDEmisorFactura: "A12345678", NumSerieFactura: "1", FechaExpedicionFactura: record.Fecha(time.Date(2024, 1, 1, 12, 0, 0, 0, time.UTC))},
@@ -98,7 +98,7 @@ func ExampleEngine_Remitir() {
 			NombreRazon:                 "Empresa",
 			NIF:                         record.Ptr("A12345678"),
 			NombreSistemaInformatico:    "go-verifactu",
-			IdSistemaInformatico:        "1",
+			IdSistemaInformatico:        "01",
 			Version:                     "0.1",
 			NumeroInstalacion:           "1",
 			TipoUsoPosibleSoloVerifactu: record.SiNoNo,

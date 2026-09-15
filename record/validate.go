@@ -50,7 +50,7 @@ func (r RegistroAlta) Validate() error {
 	}
 
 	if !idSistemaValido(r.SistemaInformatico.IdSistemaInformatico) {
-		errs = append(errs, fmt.Errorf("%w: IdSistemaInformatico must be 2 characters long", ErrValidation))
+		errs = append(errs, fmt.Errorf("%w: IdSistemaInformatico must be 2 uppercase letters or digits", ErrValidation))
 	}
 
 	if len(r.DescripcionOperacion) > 500 {
@@ -128,7 +128,7 @@ func (r RegistroAnulacion) Validate() error {
 	}
 
 	if !idSistemaValido(r.SistemaInformatico.IdSistemaInformatico) {
-		errs = append(errs, fmt.Errorf("%w: IdSistemaInformatico must be 2 characters long", ErrValidation))
+		errs = append(errs, fmt.Errorf("%w: IdSistemaInformatico must be 2 uppercase letters or digits", ErrValidation))
 	}
 
 	return errors.Join(errs...)
