@@ -15,8 +15,13 @@ func validRegistroAlta() RegistroAlta {
 			NumSerieFactura:        "12345678/G33",
 			FechaExpedicionFactura: Fecha(time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)),
 		},
-		NombreRazonEmisor:    "EMPRESA DE PRUEBAS SL",
-		TipoFactura:          TipoFacturaCompleta,
+		NombreRazonEmisor: "EMPRESA DE PRUEBAS SL",
+		TipoFactura:       TipoFacturaCompleta,
+		Destinatarios: &Destinatarios{
+			IDDestinatario: []PersonaFisicaJuridica{
+				{NombreRazon: "CLIENTE SL", NIF: Ptr("B12345674")},
+			},
+		},
 		DescripcionOperacion: "Servicios de desarrollo de software",
 		Desglose: Desglose{
 			DetalleDesglose: []DetalleDesglose{
@@ -528,12 +533,6 @@ func TestValidateVariantesValidas(t *testing.T) {
 			},
 		},
 		{
-			name: "Destinatarios is nil",
-			mod: func(r *RegistroAlta) {
-				r.Destinatarios = nil
-			},
-		},
-		{
 			name: "DetalleDesglose with OperacionExenta instead of CalificacionOperacion",
 			mod: func(r *RegistroAlta) {
 				r.Desglose.DetalleDesglose = []DetalleDesglose{
@@ -583,6 +582,64 @@ func TestValidateIdSistemaInformatico(t *testing.T) {
 			err := rec.Validate()
 			if (err == nil) != tc.valido {
 				t.Errorf("Expected validity %v for IdSistemaInformatico '%s', got error: %v", tc.valido, tc.id, err)
+			}
+		})
+	}
+}
+
+func TestValidateDestinatariosPorTipo(t *testing.T) {
+
+	uno := &Destinatarios{
+		IDDestinatario: []PersonaFisicaJuridica{
+			{NombreRazon: "CLIENTE SL", NIF: Ptr("B12345674")},
+		},
+	}
+
+	testCases := []struct {
+		name          string
+		tipoFactura   TipoFactura
+		destinatarios *Destinatarios
+		valido        bool
+		codigoError   string
+	}{
+		{
+			name:        "TipoFacturaCompleta without Destinatarios set",
+			tipoFactura: TipoFacturaCompleta,
+			valido:      false,
+			codigoError: "1189",
+		},
+		{
+			name:          "TipoFacturaCompleta with Destinatarios",
+			tipoFactura:   TipoFacturaCompleta,
+			destinatarios: uno,
+			valido:        true,
+		},
+		{
+			name:        "TipoFacturaSimplificada without Destinatarios set",
+			tipoFactura: TipoFacturaSimplificada,
+			valido:      true,
+		},
+		{
+			name:          "TipoFacturaSimplificada with Destinatarios",
+			tipoFactura:   TipoFacturaSimplificada,
+			destinatarios: uno,
+			valido:        false,
+			codigoError:   "1190",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			rec := validRegistroAlta()
+			rec.TipoFactura = tc.tipoFactura
+			rec.Destinatarios = tc.destinatarios
+			err := rec.Validate()
+			if (err == nil) != tc.valido {
+				t.Fatalf("Expected validity %v for TipoFactura '%s', got error: %v", tc.valido, tc.tipoFactura, err)
+			}
+
+			if !tc.valido && !strings.Contains(err.Error(), tc.codigoError) {
+				t.Errorf("Expected error to contain code %s, got: %v", tc.codigoError, err)
 			}
 		})
 	}

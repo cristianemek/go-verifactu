@@ -89,6 +89,18 @@ func (r RegistroAlta) Validate() error {
 		}
 	}
 
+	switch r.TipoFactura {
+	case TipoFacturaCompleta, TipoFacturaSustitutivaSimplificadas, TipoFacturaRectificativaR1,
+		TipoFacturaRectificativaR2, TipoFacturaRectificativaR3, TipoFacturaRectificativaR4:
+		if r.Destinatarios == nil {
+			errs = append(errs, fmt.Errorf("%w: Destinatarios is required for TipoFactura '%s' aeat error: 1189", ErrValidation, r.TipoFactura))
+		}
+	case TipoFacturaSimplificada, TipoFacturaRectificativaR5:
+		if r.Destinatarios != nil {
+			errs = append(errs, fmt.Errorf("%w: Destinatarios must be nil for TipoFactura '%s' aeat error: 1190", ErrValidation, r.TipoFactura))
+		}
+	}
+
 	return errors.Join(errs...)
 }
 
