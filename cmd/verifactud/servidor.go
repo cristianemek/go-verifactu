@@ -134,10 +134,7 @@ func (s *servidor) alta(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	select {
-	case s.avisar <- struct{}{}:
-	default:
-	}
+	s.tocarTimbre()
 
 	responderJSON(w, http.StatusCreated, respuestaRegistro{
 		Entry:  entry,
@@ -176,10 +173,7 @@ func (s *servidor) anulacion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	select {
-	case s.avisar <- struct{}{}:
-	default:
-	}
+	s.tocarTimbre()
 
 	responderJSON(w, http.StatusCreated, respuestaRegistro{
 		Entry:  entry,
@@ -255,6 +249,9 @@ func (s *servidor) remitir(ctx context.Context, nif string) error {
 	var espera *verifactu.ErrorEspera
 
 	if errors.As(err, &espera) {
+		slog.Info("en espera", "nif", nif, "hasta", espera.Hasta.Format("15:04:05"), "faltan", espera.Restante.Round(time.Second))
+
+		time.AfterFunc(espera.Restante+time.Second, s.tocarTimbre)
 		return nil
 	}
 
@@ -337,4 +334,11 @@ func (s *servidor) vuelta(bloqueados map[string]bool) {
 	}
 
 	cancel()
+}
+
+func (s *servidor) tocarTimbre() {
+	select {
+	case s.avisar <- struct{}{}:
+	default:
+	}
 }
