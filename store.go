@@ -29,4 +29,7 @@ type Store interface {
 
 	// UltimoEnvio returns the last submission, or ErrNoEncontrado if there is none.
 	UltimoEnvio(ctx context.Context, t Tenant) (*Envio, error)
+
+	// EnvioDe returns the last submission with a line for that entry, or ErrNoEncontrado if it was never sent.
+	EnvioDe(ctx context.Context, t Tenant, secuencia uint64) (*Envio, error)
 }
