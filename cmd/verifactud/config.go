@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/cristianemek/go-verifactu/record"
 )
@@ -60,11 +61,24 @@ func cargarConfig(path string) (*Config, error) {
 		return nil, fmt.Errorf("missing tenants in config")
 	}
 
+	tenants := make(map[string]TenantConfig, len(cfg.Tenants))
+
 	for nif, t := range cfg.Tenants {
 		if t.Token == "" {
 			return nil, fmt.Errorf("missing token for tenant %s", nif)
 		}
+
+		nif = strings.ToUpper(nif)
+
+		if _, exists := tenants[nif]; exists {
+			return nil, fmt.Errorf("duplicate tenant NIF: %s", nif)
+		}
+
+		tenants[nif] = t
+
 	}
+
+	cfg.Tenants = tenants
 
 	return &cfg, nil
 }
