@@ -20,11 +20,11 @@ type Store interface {
 	// Cadenas returns all entries in chain order. An empty result if the chain is empty.
 	Cadena(ctx context.Context, t Tenant) ([]*Entry, error)
 
-	// Pendientes returns what is not settled yet, in chain order. A limite of zero
+	// Pendientes returns what is not processed yet, in chain order. A limite of zero
 	// or less means no limit, and an empty result is not an error.
 	Pendientes(ctx context.Context, t Tenant, limite int) ([]*Entry, error)
 
-	// AnexarEnvio records one submission and marks the lines it settled.
+	// AnexarEnvio records one submission and marks the lines it processed.
 	AnexarEnvio(ctx context.Context, t Tenant, envio *Envio) error
 
 	// UltimoEnvio returns the last submission, or ErrNoEncontrado if there is none.

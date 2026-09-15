@@ -306,17 +306,17 @@ func TestPendientes(t *testing.T) {
 			want:   []uint64{1, 2, 3},
 		},
 		{
-			name: "Todas rechazadas",
+			name: "Todas rechazadas se procesan",
 			lineas: []verifactu.LineaEnvio{
 				buildLinea(1, record.EstadoRegistroIncorrecto),
 				buildLinea(2, record.EstadoRegistroIncorrecto),
 				buildLinea(3, record.EstadoRegistroIncorrecto),
 			},
 			limite: 0,
-			want:   []uint64{1, 2, 3},
+			want:   []uint64{},
 		},
 		{
-			name: "Aceptada con errores liquida",
+			name: "Aceptada con errores se procesa",
 			lineas: []verifactu.LineaEnvio{
 				buildLinea(1, record.EstadoRegistroAceptadoConErrores),
 				buildLinea(2, record.EstadoRegistroAceptadoConErrores),

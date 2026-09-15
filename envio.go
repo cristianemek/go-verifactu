@@ -26,8 +26,8 @@ type LineaEnvio struct {
 	Secuencia   uint64
 }
 
-// Liquidada returns true if processed. AEAT keeps this record, so to fix it
-// you must send a "Subsanación" patch. Warning: it reuses the same invoice ID.
-func (e LineaEnvio) Liquidada() bool {
-	return e.Estado == record.EstadoRegistroCorrecto || e.Estado == record.EstadoRegistroAceptadoConErrores
+// Procesada reports whether the AEAT gave a final answer.
+// A rejection counts: fix it with TrasRechazo, never by resending the same record.
+func (e LineaEnvio) Procesada() bool {
+	return e.Estado == record.EstadoRegistroCorrecto || e.Estado == record.EstadoRegistroAceptadoConErrores || e.Estado == record.EstadoRegistroIncorrecto
 }

@@ -32,7 +32,7 @@ type Store struct {
 	mu         sync.RWMutex
 	cadenas    map[verifactu.Tenant][]*verifactu.Entry
 	envios     map[verifactu.Tenant][]*verifactu.Envio
-	liquidados map[verifactu.Tenant]map[uint64]bool
+	procesados map[verifactu.Tenant]map[uint64]bool
 }
 
 // Cadenas implements [verifactu.Store].
@@ -60,7 +60,7 @@ func New(dir string) (*Store, error) {
 
 	cadenas := make(map[verifactu.Tenant][]*verifactu.Entry)
 	envios := make(map[verifactu.Tenant][]*verifactu.Envio)
-	liquidados := make(map[verifactu.Tenant]map[uint64]bool)
+	procesados := make(map[verifactu.Tenant]map[uint64]bool)
 
 	for _, entry := range dirEntry {
 		nombre := entry.Name()
@@ -96,9 +96,9 @@ func New(dir string) (*Store, error) {
 			}
 			envios[tenant] = enviosEntries
 
-			liquidados[tenant] = make(map[uint64]bool)
+			procesados[tenant] = make(map[uint64]bool)
 			for _, envio := range enviosEntries {
-				marcarLiquidadas(liquidados[tenant], envio)
+				marcarProcesadas(procesados[tenant], envio)
 			}
 
 		} else {
@@ -114,7 +114,7 @@ func New(dir string) (*Store, error) {
 		dir:        dir,
 		cadenas:    cadenas,
 		envios:     envios,
-		liquidados: liquidados,
+		procesados: procesados,
 	}, nil
 }
 
@@ -131,9 +131,9 @@ func tenantDesdeNombre(base string) (verifactu.Tenant, error) {
 	}, nil
 }
 
-func marcarLiquidadas(dest map[uint64]bool, envio *verifactu.Envio) {
+func marcarProcesadas(dest map[uint64]bool, envio *verifactu.Envio) {
 	for _, linea := range envio.Lineas {
-		if linea.Liquidada() {
+		if linea.Procesada() {
 			dest[linea.Secuencia] = true
 		}
 	}
@@ -351,10 +351,10 @@ func (s *Store) AnexarEnvio(ctx context.Context, t verifactu.Tenant, envio *veri
 
 	s.envios[t] = append(s.envios[t], envio)
 
-	if s.liquidados[t] == nil {
-		s.liquidados[t] = make(map[uint64]bool)
+	if s.procesados[t] == nil {
+		s.procesados[t] = make(map[uint64]bool)
 	}
-	marcarLiquidadas(s.liquidados[t], envio)
+	marcarProcesadas(s.procesados[t], envio)
 
 	return nil
 }
@@ -367,12 +367,12 @@ func (s *Store) Pendientes(ctx context.Context, t verifactu.Tenant, limite int) 
 
 	cadena := s.cadenas[t]
 
-	liquidados := s.liquidados[t]
+	procesados := s.procesados[t]
 
 	var pendientes []*verifactu.Entry
 
 	for _, e := range cadena {
-		if !liquidados[e.Secuencia] {
+		if !procesados[e.Secuencia] {
 			pendientes = append(pendientes, e)
 
 			if limite > 0 && len(pendientes) >= limite {

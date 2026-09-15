@@ -14,7 +14,7 @@ type Store struct {
 	mu         sync.RWMutex
 	cadenas    map[verifactu.Tenant][]*verifactu.Entry
 	envios     map[verifactu.Tenant][]*verifactu.Envio
-	liquidados map[verifactu.Tenant]map[uint64]bool
+	procesados map[verifactu.Tenant]map[uint64]bool
 }
 
 func New() *Store {
@@ -22,7 +22,7 @@ func New() *Store {
 	return &Store{
 		cadenas:    make(map[verifactu.Tenant][]*verifactu.Entry),
 		envios:     make(map[verifactu.Tenant][]*verifactu.Envio),
-		liquidados: make(map[verifactu.Tenant]map[uint64]bool),
+		procesados: make(map[verifactu.Tenant]map[uint64]bool),
 	}
 }
 
@@ -86,13 +86,13 @@ func (s *Store) AnexarEnvio(ctx context.Context, t verifactu.Tenant, envio *veri
 
 	s.envios[t] = append(s.envios[t], envio)
 
-	if s.liquidados[t] == nil {
-		s.liquidados[t] = make(map[uint64]bool)
+	if s.procesados[t] == nil {
+		s.procesados[t] = make(map[uint64]bool)
 	}
 
 	for _, linea := range envio.Lineas {
-		if linea.Liquidada() {
-			s.liquidados[t][linea.Secuencia] = true
+		if linea.Procesada() {
+			s.procesados[t][linea.Secuencia] = true
 		}
 	}
 
@@ -107,12 +107,12 @@ func (s *Store) Pendientes(ctx context.Context, t verifactu.Tenant, limite int) 
 
 	cadena := s.cadenas[t]
 
-	liquidados := s.liquidados[t]
+	procesados := s.procesados[t]
 
 	var pendientes []*verifactu.Entry
 
 	for _, e := range cadena {
-		if !liquidados[e.Secuencia] {
+		if !procesados[e.Secuencia] {
 			pendientes = append(pendientes, e)
 
 			if limite > 0 && len(pendientes) >= limite {
