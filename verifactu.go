@@ -329,3 +329,8 @@ func (e *Engine) Estado(ctx context.Context, t Tenant, idFactura IDFactura, op O
 
 	return e.store.Buscar(ctx, t, idFactura, op)
 }
+
+// EnvioDe returns the submission that carried that entry, or ErrNoEncontrado if it is still pending.
+func (e *Engine) EnvioDe(ctx context.Context, t Tenant, secuencia uint64) (*Envio, error) {
+	return e.store.EnvioDe(ctx, t, secuencia)
+}

@@ -27,6 +27,14 @@ type servidor struct {
 type respuestaRegistro struct {
 	Entry  *verifactu.Entry `json:"entry"`
 	Avisos []string         `json:"avisos"`
+	AEAT   *resultadoAEAT   `json:"aeat,omitempty"`
+}
+
+type resultadoAEAT struct {
+	Estado      string `json:"estado"`
+	Codigo      string `json:"codigo,omitempty"`
+	Descripcion string `json:"descripcion,omitempty"`
+	CSV         string `json:"csv,omitempty"`
 }
 
 func (s *servidor) healthz(w http.ResponseWriter, r *http.Request) {
