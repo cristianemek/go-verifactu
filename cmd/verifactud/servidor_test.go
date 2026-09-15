@@ -141,6 +141,12 @@ func TestServidor(t *testing.T) {
 			header:         "",
 			expectedStatus: 401,
 		},
+		{
+			name:           "NIF en minúscula",
+			nif:            "89890001k",
+			header:         "Bearer valid_token",
+			expectedStatus: 204,
+		},
 	}
 	s := &servidor{
 		tenants: map[string]TenantConfig{

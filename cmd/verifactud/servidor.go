@@ -40,7 +40,7 @@ func responderError(w http.ResponseWriter, status int, msg string) {
 
 func (s *servidor) auth(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		nif := r.PathValue("nif")
+		nif := nifDeRuta(r)
 		t, ok := s.tenants[nif]
 		token, haveBearer := strings.CutPrefix(r.Header.Get("Authorization"), "Bearer ")
 
@@ -57,7 +57,7 @@ func (s *servidor) auth(next http.HandlerFunc) http.HandlerFunc {
 
 func (s *servidor) tenant(r *http.Request) verifactu.Tenant {
 	return verifactu.Tenant{
-		NIF:                  r.PathValue("nif"),
+		NIF:                  nifDeRuta(r),
 		IDSistemaInformatico: s.sistema,
 	}
 }
@@ -201,7 +201,7 @@ func (s *servidor) estado(w http.ResponseWriter, r *http.Request) {
 	}
 
 	id := verifactu.IDFactura{
-		NIF:      r.PathValue("nif"),
+		NIF:      nifDeRuta(r),
 		NumSerie: serie,
 		Fecha:    f,
 	}
@@ -315,4 +315,8 @@ func (s *servidor) bucleRemision(ctx context.Context, cada time.Duration) {
 			cancel()
 		}
 	}
+}
+
+func nifDeRuta(r *http.Request) string {
+	return strings.ToUpper(r.PathValue("nif"))
 }
