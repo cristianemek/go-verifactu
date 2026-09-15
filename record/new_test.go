@@ -40,8 +40,13 @@ func TestNewRegistroAltaHuellaOficial(t *testing.T) {
 			NumSerieFactura:        "12345678/G33",
 			FechaExpedicionFactura: fecha,
 		},
-		NombreRazonEmisor:    "EMPRESA DE PRUEBAS SL",
-		TipoFactura:          TipoFacturaCompleta,
+		NombreRazonEmisor: "EMPRESA DE PRUEBAS SL",
+		TipoFactura:       TipoFacturaCompleta,
+		Destinatarios: &Destinatarios{
+			IDDestinatario: []PersonaFisicaJuridica{
+				{NombreRazon: "CLIENTE SL", NIF: Ptr("B12345674")},
+			},
+		},
 		DescripcionOperacion: "Servicios de desarrollo de software",
 		Desglose: Desglose{
 			DetalleDesglose: []DetalleDesglose{

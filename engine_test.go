@@ -33,7 +33,7 @@ func validRegistroAlta(numSerie string) record.RegistroAlta {
 			FechaExpedicionFactura: record.Fecha(time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)),
 		},
 		NombreRazonEmisor:    "EMPRESA DE PRUEBAS SL",
-		TipoFactura:          record.TipoFacturaCompleta,
+		TipoFactura:          record.TipoFacturaSimplificada,
 		DescripcionOperacion: "Servicios de desarrollo de software",
 		Desglose: record.Desglose{
 			DetalleDesglose: []record.DetalleDesglose{

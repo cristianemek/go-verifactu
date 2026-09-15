@@ -21,7 +21,7 @@ const (
     "FechaExpedicionFactura": "10-09-2026"
   },
   "NombreRazonEmisor": "EMPRESA DE PRUEBAS SL",
-  "TipoFactura": "F1",
+  "TipoFactura": "F2",
   "DescripcionOperacion": "Servicios de desarrollo",
   "Desglose": {
     "DetalleDesglose": [

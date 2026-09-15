@@ -40,7 +40,7 @@ func ExampleEngine_Alta() {
 	factura := record.RegistroAlta{
 		IDFactura:            record.IDFacturaExpedida{IDEmisorFactura: "A12345678", NumSerieFactura: "1", FechaExpedicionFactura: record.Fecha(time.Date(2024, 1, 1, 12, 0, 0, 0, time.UTC))},
 		NombreRazonEmisor:    "Nombre",
-		TipoFactura:          record.TipoFacturaCompleta,
+		TipoFactura:          record.TipoFacturaSimplificada,
 		DescripcionOperacion: "Factura de prueba",
 		Desglose: record.Desglose{
 			DetalleDesglose: []record.DetalleDesglose{{
@@ -64,7 +64,7 @@ func ExampleEngine_Alta() {
 	fmt.Printf("secuencia: %d\nhuella: %s\n", entry.Secuencia, entry.Huella)
 	// Output:
 	// secuencia: 1
-	// huella: 6887A241A37169B6E22DC022356A2567937F56973CFF6C9F29065DA7648FCDAD
+	// huella: CD7D37A146990D6F8247903BA02C4CF64BF8DCD6B8B198BBC7092C1FA1963DB4
 }
 
 func ExampleEngine_Remitir() {
