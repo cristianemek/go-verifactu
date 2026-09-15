@@ -249,7 +249,22 @@ func (s *servidor) remitir(ctx context.Context, nif string) error {
 		return fmt.Errorf("error remitting: %w", err)
 	}
 
-	slog.Info("remitido", "nif", nif, "registros", len(envio.Lineas), "csv", envio.CSV, "estado", envio.EstadoEnvio)
+	var rechazados int
+
+	for _, linea := range envio.Lineas {
+		if linea.Estado != record.EstadoRegistroCorrecto {
+			rechazados++
+			slog.Warn("registro no aceptado", "nif", nif, "serie", linea.IDFactura.NumSerie, "estado", linea.Estado, "codigo", linea.CodigoError, "descripcion", linea.Descripcion)
+		}
+
+	}
+
+	nivel := slog.LevelInfo
+	if envio.EstadoEnvio != record.EstadoEnvioCorrecto {
+		nivel = slog.LevelWarn
+	}
+
+	slog.Log(ctx, nivel, "remitido", "nif", nif, "csv", envio.CSV, "estado", envio.EstadoEnvio, "correctos", len(envio.Lineas)-rechazados, "rechazados", rechazados)
 
 	return nil
 }
