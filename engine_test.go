@@ -762,3 +762,104 @@ func TestSistemaInformaticoRequeridoSinConfig(t *testing.T) {
 		t.Fatalf("Expected ErrValidation when SistemaInformatico is empty and no config provided, got %v", err)
 	}
 }
+
+func TestAltaRechazoPrevio(t *testing.T) {
+
+	testCases := []struct {
+		fila          string
+		opciones      []verifactu.OpcionRegistro
+		previo        func(t *testing.T, engine *verifactu.Engine, store *memory.Store, tenant verifactu.Tenant)
+		rechazoPrevio record.RechazoPrevio
+		subsanacion   record.SiNo
+	}{
+		{
+			fila:          "alta normal",
+			rechazoPrevio: "",
+			subsanacion:   "",
+		},
+		{
+			fila:          "tras rechazo del alta",
+			opciones:      []verifactu.OpcionRegistro{verifactu.TrasRechazo()},
+			rechazoPrevio: record.RechazoPrevioNoExiste,
+			subsanacion:   record.SiNoSi,
+		},
+		{
+			fila:          "tras rechazo con una version aceptada",
+			opciones:      []verifactu.OpcionRegistro{verifactu.TrasRechazo()},
+			rechazoPrevio: record.RechazoPrevioSi,
+			previo: func(t *testing.T, engine *verifactu.Engine, store *memory.Store, tenant verifactu.Tenant) {
+				ctx := context.Background()
+
+				if _, err := engine.Alta(ctx, tenant, validRegistroAlta("001")); err != nil {
+					t.Fatalf("Alta() = %v", err)
+				}
+				if _, err := engine.Alta(ctx, tenant, validRegistroAlta("001"), verifactu.TrasRechazo()); err != nil {
+					t.Fatalf("Alta() = %v", err)
+				}
+				err := store.AnexarEnvio(ctx, tenant, &verifactu.Envio{
+					Lineas: []verifactu.LineaEnvio{
+						{Secuencia: 1, Estado: record.EstadoRegistroIncorrecto},
+						{Secuencia: 2, Estado: record.EstadoRegistroCorrecto},
+					},
+				})
+				if err != nil {
+					t.Fatalf("AnexarEnvio() = %v", err)
+				}
+			},
+
+			subsanacion: record.SiNoSi,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.fila, func(t *testing.T) {
+			store := memory.New()
+
+			engine, err := verifactu.New(verifactu.Config{Store: store, Now: fixedTime})
+			if err != nil {
+				t.Fatalf("Error creating engine: %v", err)
+			}
+
+			tenant := verifactu.Tenant{NIF: "89890001K", IDSistemaInformatico: "01"}
+
+			if tc.previo != nil {
+				tc.previo(t, engine, store, tenant)
+			}
+
+			entry, err := engine.Alta(context.Background(), tenant, validRegistroAlta("001"), tc.opciones...)
+			if err != nil {
+				t.Fatalf("Alta() = %v", err)
+			}
+
+			if tc.rechazoPrevio == "" {
+				if entry.Alta.RechazoPrevio != nil {
+					t.Errorf("RechazoPrevio = %v, want nil", *entry.Alta.RechazoPrevio)
+				}
+
+			} else {
+				if entry.Alta.RechazoPrevio == nil {
+					t.Fatalf("RechazoPrevio = nil, want %v", tc.rechazoPrevio)
+				}
+
+				if *entry.Alta.RechazoPrevio != tc.rechazoPrevio {
+					t.Errorf("RechazoPrevio = %v, want %v", *entry.Alta.RechazoPrevio, tc.rechazoPrevio)
+				}
+			}
+
+			if tc.subsanacion == "" {
+				if entry.Alta.Subsanacion != nil {
+					t.Errorf("Subsanacion = %v, want nil", *entry.Alta.Subsanacion)
+				}
+			} else {
+				if entry.Alta.Subsanacion == nil {
+					t.Fatalf("Subsanacion = nil, want %v", tc.subsanacion)
+				}
+
+				if *entry.Alta.Subsanacion != tc.subsanacion {
+					t.Errorf("Subsanacion = %v, want %v", *entry.Alta.Subsanacion, tc.subsanacion)
+				}
+			}
+
+		})
+	}
+}

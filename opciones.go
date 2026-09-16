@@ -19,7 +19,7 @@ func ComoSubsanacion() OpcionRegistro {
 
 // TrasRechazo sends the record again after the AEAT rejected the previous one.
 // On an Alta it also implies ComoSubsanacion, and the Engine fills in
-// RechazoPrevio = "X"; on an Anular the value is "S".
+// RechazoPrevio: "X", or "S" when an earlier version of the invoice was accepted, on an Anular the value is "S".
 func TrasRechazo() OpcionRegistro {
 	return func(o *opcionesRegistro) {
 		o.esTrasRechazo = true

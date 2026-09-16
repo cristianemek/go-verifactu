@@ -176,6 +176,21 @@ func (e *Engine) Alta(ctx context.Context, t Tenant, r record.RegistroAlta, opci
 
 	}
 
+	rechazoPrevio := record.RechazoPrevioNoExiste
+
+	if opts.esTrasRechazo {
+		consta, err := e.consta(ctx, t, id)
+
+		if err != nil {
+			return nil, err
+		}
+
+		if consta {
+			rechazoPrevio = record.RechazoPrevioSi
+		}
+
+	}
+
 	for range maxIntentosAnexar {
 		secuencia, encadenamiento, err := e.siguienteCadena(ctx, t)
 
@@ -192,7 +207,7 @@ func (e *Engine) Alta(ctx context.Context, t Tenant, r record.RegistroAlta, opci
 
 		if esCorreccion {
 			if opts.esTrasRechazo {
-				r.RechazoPrevio = record.Ptr(record.RechazoPrevioNoExiste)
+				r.RechazoPrevio = record.Ptr(rechazoPrevio)
 			}
 			r.Subsanacion = record.Ptr(record.SiNoSi)
 		}
@@ -225,6 +240,43 @@ func (e *Engine) Alta(ctx context.Context, t Tenant, r record.RegistroAlta, opci
 	}
 
 	return nil, fmt.Errorf("%w: %d", ErrConflictoDeSecuencia, maxIntentosAnexar)
+}
+
+// consta returns true if the invoice is already in the chain and has been accepted or accepted with errors. It returns false if it is not found or if it was rejected.
+func (e *Engine) consta(ctx context.Context, t Tenant, id IDFactura) (bool, error) {
+	cadena, err := e.store.Cadena(ctx, t)
+
+	if err != nil {
+		return false, err
+	}
+
+	for _, entry := range cadena {
+		if !entry.IDFactura.Equal(id) {
+			continue
+		}
+
+		envio, err := e.store.EnvioDe(ctx, t, entry.Secuencia)
+
+		if errors.Is(err, ErrNoEncontrado) {
+			continue
+		}
+
+		if err != nil {
+			return false, err
+		}
+
+		for _, linea := range envio.Lineas {
+			if linea.Secuencia != entry.Secuencia {
+				continue
+			}
+			if linea.Estado == record.EstadoRegistroCorrecto || linea.Estado == record.EstadoRegistroAceptadoConErrores {
+				return true, nil
+			}
+		}
+
+	}
+
+	return false, nil
 }
 
 // Anular records the cancellation of a previously issued invoice. Same algorithm
