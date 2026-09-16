@@ -309,7 +309,15 @@ func (s *servidor) remitir(ctx context.Context, nif string) error {
 	for _, linea := range envio.Lineas {
 		if linea.Estado != record.EstadoRegistroCorrecto {
 			rechazados++
-			slog.Warn("registro no aceptado", "nif", nif, "serie", linea.IDFactura.NumSerie, "estado", linea.Estado, "codigo", linea.CodigoError, "descripcion", linea.Descripcion)
+
+			nivel := slog.LevelWarn
+			// 2007 y 2000 son cadena desincronizada y huella incorrecta, respectivamente. Son errores de software, no de datos, y hay que avisar a quien mantiene el servicio.
+			if linea.CodigoError == "2007" || linea.CodigoError == "2000" {
+				nivel = slog.LevelError
+			}
+
+			slog.Log(ctx, nivel, "registro no aceptado", "nif", nif, "serie", linea.IDFactura.NumSerie, "estado", linea.Estado, "codigo", linea.CodigoError, "descripcion", linea.Descripcion)
+
 		}
 
 	}
