@@ -94,25 +94,33 @@ func construirServidor(cfg *Config) (*servidor, error) {
 		return nil, fmt.Errorf("error creating store: %w", err)
 	}
 
-	cert, err := aeat.CargarPEM(cfg.Certificado, cfg.Certificado)
+	clientes := make(map[string]*aeat.Client, len(cfg.Tenants))
+	transportes := make(map[string]verifactu.Transport, len(cfg.Tenants))
 
-	if err != nil {
-		return nil, fmt.Errorf("error loading certificate: %w", err)
-	}
+	for nif, t := range cfg.Tenants {
+		cert, err := aeat.CargarPEM(t.Certificado, t.Certificado)
+		if err != nil {
+			return nil, fmt.Errorf("error loading certificate for tenant %s: %w", nif, err)
+		}
 
-	cliente, err := aeat.NewClient(aeat.Config{
-		Entorno:         aeat.Entorno(cfg.Entorno),
-		TipoCertificado: aeat.TipoCertificado(cfg.TipoCertificado),
-		Certificado:     cert,
-	})
+		cliente, err := aeat.NewClient(aeat.Config{
+			Entorno:         aeat.Entorno(cfg.Entorno),
+			TipoCertificado: aeat.TipoCertificado(t.TipoCertificado),
+			Certificado:     cert,
+		})
 
-	if err != nil {
-		return nil, fmt.Errorf("error creating client: %w", err)
+		if err != nil {
+			return nil, fmt.Errorf("error creating client for tenant %s: %w", nif, err)
+		}
+
+		clientes[nif] = cliente
+		transportes[nif] = cliente
+
 	}
 
 	engine, err := verifactu.New(verifactu.Config{
 		Store:              store,
-		Transport:          cliente,
+		Transport:          &transportePorTenant{transportes: transportes},
 		SistemaInformatico: &cfg.Sistema,
 	})
 
@@ -136,10 +144,10 @@ func construirServidor(cfg *Config) (*servidor, error) {
 	}
 
 	return &servidor{
-		engine:  engine,
-		cliente: cliente,
-		tenants: cfg.Tenants,
-		sistema: cfg.Sistema.IdSistemaInformatico,
-		avisar:  make(chan struct{}, 1),
+		engine:   engine,
+		clientes: clientes,
+		tenants:  cfg.Tenants,
+		sistema:  cfg.Sistema.IdSistemaInformatico,
+		avisar:   make(chan struct{}, 1),
 	}, nil
 }

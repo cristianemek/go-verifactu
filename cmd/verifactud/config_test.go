@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -13,8 +14,6 @@ func escribirConfig(t *testing.T, nif, token string) string {
 			"listen": ":8080",
 			"data": "./datos",
 			"entorno": "pruebas",
-			"certificado": "dev.pem",
-			"tipo_certificado": "representante",
 			"remision_cada": "60s",
 			"sistema": {
 				"NombreRazon": "TU EMPRESA SL",
@@ -30,7 +29,9 @@ func escribirConfig(t *testing.T, nif, token string) string {
 			"tenants": {
 				"%s": {
 				"nombre": "EMPRESA DE PRUEBAS SL",
-				"token": "%s"
+				"token": "%s",
+				"certificado": "dev.pem",
+				"tipo_certificado": "representante"
 				}
 			}
 			}`, nif, token)
@@ -90,4 +91,49 @@ func TestCargarConfigNIFEnMayusculas(t *testing.T) {
 	if _, ok := cfg.Tenants["89890001K"]; !ok {
 		t.Errorf("cargarConfig() did not convert NIF to uppercase, expected key '89890001K'")
 	}
+}
+
+func TestCargarConfigExigeCertificadoPorTenant(t *testing.T) {
+	cfg := fmt.Sprintf(`{
+			"listen": ":8080",
+			"data": "./datos",
+			"entorno": "pruebas",
+			"remision_cada": "60s",
+			"sistema": {
+				"NombreRazon": "TU EMPRESA SL",
+				"NIF": "89890001K",
+				"NombreSistemaInformatico": "verifactud",
+				"IdSistemaInformatico": "01",
+				"Version": "0.9.0",
+				"NumeroInstalacion": "1",
+				"TipoUsoPosibleSoloVerifactu": "S",
+				"TipoUsoPosibleMultiOT": "S",
+				"IndicadorMultiplesOT": "S"
+			},
+			"tenants": {
+				"89890001K": {
+				"nombre": "EMPRESA DE PRUEBAS SL",
+				"token": "token123",
+				"certificado": "dev.pem",
+				"tipo_certificado": "representante"
+				},
+				"89890002F": {
+				"nombre": "EMPRESA DE PRUEBAS2 SL",
+				"token": "token123"
+				}
+			}
+			}`)
+
+	path := filepath.Join(t.TempDir(), "config.json")
+
+	if err := os.WriteFile(path, []byte(cfg), 0644); err != nil {
+		t.Fatalf("Error writing config file: %v", err)
+	}
+
+	_, err := cargarConfig(path)
+
+	if err == nil || !strings.Contains(err.Error(), "89890002F") {
+		t.Fatalf("cargarConfig() error = %v, want one naming 89890002F", err)
+	}
+
 }

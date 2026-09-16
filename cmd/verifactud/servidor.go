@@ -17,11 +17,11 @@ import (
 )
 
 type servidor struct {
-	engine  *verifactu.Engine
-	cliente *aeat.Client
-	tenants map[string]TenantConfig
-	sistema string
-	avisar  chan struct{}
+	engine   *verifactu.Engine
+	clientes map[string]*aeat.Client
+	tenants  map[string]TenantConfig
+	sistema  string
+	avisar   chan struct{}
 }
 
 type respuestaRegistro struct {
@@ -317,7 +317,13 @@ func (s *servidor) remitir(ctx context.Context, nif string) error {
 }
 
 func (s *servidor) conexion(w http.ResponseWriter, r *http.Request) {
-	err := s.cliente.ProbarConexion(r.Context())
+	cliente, ok := s.clientes[nifDeRuta(r)]
+	if !ok {
+		responderError(w, http.StatusNotFound, "Tenant not found")
+		return
+	}
+
+	err := cliente.ProbarConexion(r.Context())
 	if err != nil {
 		status, msg := mapearError(err)
 		if status == http.StatusInternalServerError {

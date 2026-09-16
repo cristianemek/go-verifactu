@@ -10,18 +10,18 @@ import (
 )
 
 type TenantConfig struct {
-	Nombre string `json:"nombre"`
-	Token  string `json:"token"`
+	Nombre          string `json:"nombre"`
+	Token           string `json:"token"`
+	Certificado     string `json:"certificado"`
+	TipoCertificado string `json:"tipo_certificado"`
 }
 type Config struct {
-	Listen          string                    `json:"listen"`
-	Data            string                    `json:"data"`
-	Entorno         string                    `json:"entorno"`
-	Certificado     string                    `json:"certificado"`
-	TipoCertificado string                    `json:"tipo_certificado"`
-	RemisionCada    string                    `json:"remision_cada"`
-	Sistema         record.SistemaInformatico `json:"sistema"`
-	Tenants         map[string]TenantConfig   `json:"tenants"`
+	Listen       string                    `json:"listen"`
+	Data         string                    `json:"data"`
+	Entorno      string                    `json:"entorno"`
+	RemisionCada string                    `json:"remision_cada"`
+	Sistema      record.SistemaInformatico `json:"sistema"`
+	Tenants      map[string]TenantConfig   `json:"tenants"`
 }
 
 func cargarConfig(path string) (*Config, error) {
@@ -53,10 +53,6 @@ func cargarConfig(path string) (*Config, error) {
 		return nil, fmt.Errorf("missing entorno in config")
 	}
 
-	if cfg.Certificado == "" {
-		return nil, fmt.Errorf("missing certificado in config")
-	}
-
 	if len(cfg.Tenants) == 0 {
 		return nil, fmt.Errorf("missing tenants in config")
 	}
@@ -66,6 +62,14 @@ func cargarConfig(path string) (*Config, error) {
 	for nif, t := range cfg.Tenants {
 		if t.Token == "" {
 			return nil, fmt.Errorf("missing token for tenant %s", nif)
+		}
+
+		if t.Certificado == "" {
+			return nil, fmt.Errorf("missing certificado for tenant %s", nif)
+		}
+
+		if t.TipoCertificado == "" {
+			return nil, fmt.Errorf("missing tipo_certificado for tenant %s", nif)
 		}
 
 		nif = strings.ToUpper(nif)

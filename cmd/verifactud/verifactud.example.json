@@ -2,8 +2,6 @@
   "listen": ":9009",
   "data": "./datos",
   "entorno": "pruebas",
-  "certificado": "dev.pem",
-  "tipo_certificado": "representante",
   "remision_cada": "60s",
   "sistema": {
     "NombreRazon": "TU EMPRESA SL",
@@ -19,7 +17,9 @@
   "tenants": {
     "89890001K": {
       "nombre": "EMPRESA DE PRUEBAS SL",
-      "token": "cambia-este-token-antes-de-desplegar"
+      "token": "cambia-este-token-antes-de-desplegar",
+      "certificado": "dev.pem",
+      "tipo_certificado": "representante"
     }
   }
 }
