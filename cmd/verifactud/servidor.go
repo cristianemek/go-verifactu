@@ -342,6 +342,8 @@ func (s *servidor) bucleRemision(ctx context.Context, cada time.Duration) {
 
 	bloqueados := map[string]bool{}
 
+	s.vuelta(bloqueados)
+
 	for {
 		select {
 		case <-ctx.Done():
