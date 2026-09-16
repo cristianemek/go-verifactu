@@ -22,12 +22,14 @@ type servidor struct {
 	tenants  map[string]TenantConfig
 	sistema  string
 	avisar   chan struct{}
+	entorno  record.Entorno
 }
 
 type respuestaRegistro struct {
 	Entry  *verifactu.Entry `json:"entry"`
 	Avisos []string         `json:"avisos"`
 	AEAT   *resultadoAEAT   `json:"aeat,omitempty"`
+	QR     string           `json:"qr,omitempty"`
 }
 
 type resultadoAEAT struct {
@@ -142,10 +144,13 @@ func (s *servidor) alta(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	qr := s.qrDe(entry)
+
 	s.tocarTimbre()
 
 	responderJSON(w, http.StatusCreated, respuestaRegistro{
 		Entry:  entry,
+		QR:     qr,
 		Avisos: avisos,
 	})
 }
@@ -259,10 +264,13 @@ func (s *servidor) estado(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	qr := s.qrDe(entry)
+
 	responderJSON(w, http.StatusOK, respuestaRegistro{
 		Entry:  entry,
 		Avisos: []string{},
 		AEAT:   aeat,
+		QR:     qr,
 	})
 }
 
@@ -386,4 +394,26 @@ func (s *servidor) tocarTimbre() {
 	case s.avisar <- struct{}{}:
 	default:
 	}
+}
+
+func entornoQR(entorno string) record.Entorno {
+	if entorno == "produccion" {
+		return record.EntornoProduccion
+	}
+
+	return record.EntornoPruebas
+}
+
+func (s *servidor) qrDe(entry *verifactu.Entry) string {
+	if entry.Alta == nil {
+		return ""
+	}
+
+	qr, err := entry.Alta.ComparisonURL(s.entorno)
+	if err != nil {
+		slog.Error("error generating QR URL", "serie", entry.IDFactura.NumSerie, "error", err)
+		return ""
+	}
+
+	return qr
 }

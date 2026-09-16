@@ -149,5 +149,6 @@ func construirServidor(cfg *Config) (*servidor, error) {
 		tenants:  cfg.Tenants,
 		sistema:  cfg.Sistema.IdSistemaInformatico,
 		avisar:   make(chan struct{}, 1),
+		entorno:  entornoQR(cfg.Entorno),
 	}, nil
 }

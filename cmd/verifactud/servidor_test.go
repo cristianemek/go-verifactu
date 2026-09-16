@@ -94,6 +94,7 @@ func servidorConStore(t *testing.T) (*servidor, *memory.Store) {
 		engine:  engine,
 		tenants: map[string]TenantConfig{"89890001K": {Nombre: "EMPRESA DE PRUEBAS SL", Token: "secreto"}},
 		sistema: "01",
+		entorno: record.EntornoPruebas,
 	}, store
 }
 
@@ -214,6 +215,12 @@ func TestAlta(t *testing.T) {
 
 			if rec.Code != tc.expectedStatus {
 				t.Errorf("Expected status %d, got %d, body: %s", tc.expectedStatus, rec.Code, rec.Body.String())
+			}
+
+			resp := decodificar(t, rec)
+
+			if !strings.HasPrefix(resp.QR, "https://prewww2.aeat.es") && tc.expectedStatus == http.StatusCreated {
+				t.Errorf("Expected QR URL to start with AEAT test URL, got %s", resp.QR)
 			}
 
 		})
