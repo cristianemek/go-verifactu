@@ -1,0 +1,635 @@
+openapi: 3.0.3
+info:
+  title: verifactud
+  version: 0.9.0
+  description: |
+    Registro y remisión de facturas a VERI*FACTU (AEAT).
+
+    Los importes van en enteros: 12100 son 121,00 €. Los porcentajes también:
+    2100 es el 21 %. Las fechas van como dd-mm-aaaa.
+
+    La guía con ejemplos completos está en api.md.
+servers:
+  - url: http://localhost:9009
+    description: instalación local
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: registro
+    description: Alta y anulación de facturas
+  - name: consulta
+    description: Estado, conexión y salud
+
+paths:
+  /v1/{nif}/alta:
+    post:
+      tags: [registro]
+      summary: Registra una factura
+      description: |
+        Registra la factura, la encadena y la deja lista para remitir. La
+        remisión a la AEAT ocurre después, por su cuenta.
+
+        Es idempotente: repetir el alta de la misma factura devuelve el mismo
+        registro, salvo que se use tras_rechazo.
+      parameters:
+        - $ref: '#/components/parameters/Nif'
+        - name: tras_rechazo
+          in: query
+          required: false
+          allowEmptyValue: true
+          schema:
+            type: boolean
+          description: |
+            La factura anterior con este número fue rechazada por la AEAT y
+            esta la corrige.
+        - name: subsanacion
+          in: query
+          required: false
+          allowEmptyValue: true
+          schema:
+            type: boolean
+          description: |
+            Corrige una factura que la AEAT sí aceptó.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegistroAlta'
+            examples:
+              simplificada:
+                summary: Factura simplificada (F2)
+                value:
+                  IDFactura:
+                    IDEmisorFactura: "89890001K"
+                    NumSerieFactura: "T-2026-0001"
+                    FechaExpedicionFactura: "10-09-2026"
+                  NombreRazonEmisor: "EMPRESA DE PRUEBAS SL"
+                  TipoFactura: "F2"
+                  DescripcionOperacion: "Consumición en barra"
+                  Desglose:
+                    DetalleDesglose:
+                      - Impuesto: "01"
+                        ClaveRegimen: "01"
+                        CalificacionOperacion: "S1"
+                        TipoImpositivo: 2100
+                        BaseImponibleOimporteNoSujeto: 10000
+                        CuotaRepercutida: 2100
+                  CuotaTotal: 2100
+                  ImporteTotal: 12100
+              completa:
+                summary: Factura completa (F1), con destinatario
+                value:
+                  IDFactura:
+                    IDEmisorFactura: "89890001K"
+                    NumSerieFactura: "F-2026-0001"
+                    FechaExpedicionFactura: "10-09-2026"
+                  NombreRazonEmisor: "EMPRESA DE PRUEBAS SL"
+                  TipoFactura: "F1"
+                  DescripcionOperacion: "Servicios de desarrollo"
+                  Destinatarios:
+                    IDDestinatario:
+                      - NombreRazon: "CLIENTE SL"
+                        NIF: "B12345674"
+                  Desglose:
+                    DetalleDesglose:
+                      - Impuesto: "01"
+                        ClaveRegimen: "01"
+                        CalificacionOperacion: "S1"
+                        TipoImpositivo: 2100
+                        BaseImponibleOimporteNoSujeto: 100000
+                        CuotaRepercutida: 21000
+                  CuotaTotal: 21000
+                  ImporteTotal: 121000
+              rectificativa:
+                summary: Rectificativa por diferencias (R1)
+                value:
+                  IDFactura:
+                    IDEmisorFactura: "89890001K"
+                    NumSerieFactura: "R-2026-0001"
+                    FechaExpedicionFactura: "15-09-2026"
+                  NombreRazonEmisor: "EMPRESA DE PRUEBAS SL"
+                  TipoFactura: "R1"
+                  TipoRectificativa: "I"
+                  FacturasRectificadas:
+                    IDFacturaRectificada:
+                      - IDEmisorFactura: "89890001K"
+                        NumSerieFactura: "F-2026-0001"
+                        FechaExpedicionFactura: "10-09-2026"
+                  DescripcionOperacion: "Rectificacion de la factura F-2026-0001"
+                  Destinatarios:
+                    IDDestinatario:
+                      - NombreRazon: "CLIENTE SL"
+                        NIF: "B12345674"
+                  Desglose:
+                    DetalleDesglose:
+                      - Impuesto: "01"
+                        ClaveRegimen: "01"
+                        CalificacionOperacion: "S1"
+                        TipoImpositivo: 2100
+                        BaseImponibleOimporteNoSujeto: -10000
+                        CuotaRepercutida: -2100
+                  CuotaTotal: -2100
+                  ImporteTotal: -12100
+      responses:
+        '201':
+          description: Factura registrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespuestaRegistro'
+        '400':
+          $ref: '#/components/responses/PeticionInvalida'
+        '401':
+          $ref: '#/components/responses/NoAutorizado'
+        '409':
+          $ref: '#/components/responses/Conflicto'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+
+  /v1/{nif}/anular:
+    post:
+      tags: [registro]
+      summary: Anula una factura registrada
+      description: |
+        Para deshacer una factura lo habitual es una rectificativa, que deja
+        los dos documentos en la cadena. La anulación es para una factura que
+        nunca debió existir.
+      parameters:
+        - $ref: '#/components/parameters/Nif'
+        - name: tras_rechazo
+          in: query
+          required: false
+          allowEmptyValue: true
+          schema:
+            type: boolean
+          description: La anulación anterior fue rechazada y esta la corrige.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegistroAnulacion'
+            examples:
+              anulacion:
+                summary: Anulación de una factura registrada
+                value:
+                  IDFactura:
+                    IDEmisorFacturaAnulada: "89890001K"
+                    NumSerieFacturaAnulada: "F-2026-0001"
+                    FechaExpedicionFacturaAnulada: "10-09-2026"
+      responses:
+        '201':
+          description: Anulación registrada. No lleva QR.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespuestaRegistro'
+        '400':
+          $ref: '#/components/responses/PeticionInvalida'
+        '401':
+          $ref: '#/components/responses/NoAutorizado'
+        '409':
+          $ref: '#/components/responses/Conflicto'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+
+  /v1/{nif}/estado:
+    get:
+      tags: [consulta]
+      summary: Devuelve una factura y lo que contestó la AEAT
+      parameters:
+        - $ref: '#/components/parameters/Nif'
+        - name: serie
+          in: query
+          required: true
+          schema:
+            type: string
+          example: "T-2026-0001"
+        - name: fecha
+          in: query
+          required: true
+          description: Fecha de expedición, dd-mm-aaaa.
+          schema:
+            type: string
+            pattern: '^\d{2}-\d{2}-\d{4}$'
+          example: "10-09-2026"
+        - name: op
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [alta, anulacion]
+            default: alta
+      responses:
+        '200':
+          description: La factura, con el resultado de la AEAT
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespuestaRegistro'
+              examples:
+                correcta:
+                  summary: Aceptada por la AEAT
+                  value:
+                    entry:
+                      Operacion: alta
+                      Secuencia: 7
+                      Huella: "CD7D37A146990D6F8247903BA02C4CF64BF8DCD6B8B198BBC7092C1FA1963DB4"
+                      IDFactura:
+                        NIF: "89890001K"
+                        NumSerie: "T-2026-0001"
+                        Fecha: "10-09-2026"
+                      Correccion: false
+                    avisos: []
+                    aeat:
+                      estado: Correcto
+                      csv: "A-3JLMAM3L8XVZD9"
+                    qr: "https://prewww2.aeat.es/wlpl/TIKE-CONT/ValidarQR?fecha=10-09-2026&importe=121.00&nif=89890001K&numserie=T-2026-0001"
+                rechazada:
+                  summary: Rechazada, hay que corregirla
+                  value:
+                    entry:
+                      Operacion: alta
+                      Secuencia: 8
+                      IDFactura:
+                        NIF: "89890001K"
+                        NumSerie: "F-2026-0002"
+                        Fecha: "10-09-2026"
+                      Correccion: false
+                    avisos: []
+                    aeat:
+                      estado: Incorrecto
+                      codigo: "1189"
+                      descripcion: "Es obligatorio que se informe del bloque Destinatarios"
+        '400':
+          $ref: '#/components/responses/PeticionInvalida'
+        '401':
+          $ref: '#/components/responses/NoAutorizado'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+
+  /v1/{nif}/conexion:
+    get:
+      tags: [consulta]
+      summary: Prueba el certificado de ese NIF contra la AEAT
+      description: No envía ninguna factura.
+      parameters:
+        - $ref: '#/components/parameters/Nif'
+      responses:
+        '204':
+          description: La AEAT acepta el certificado
+        '401':
+          $ref: '#/components/responses/NoAutorizado'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '502':
+          description: Fallo del lado de la AEAT
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: El certificado falta o la AEAT no lo acepta
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /healthz:
+    get:
+      tags: [consulta]
+      summary: El proceso está vivo
+      description: No pide token y no comprueba la AEAT.
+      security: []
+      responses:
+        '200':
+          description: Vivo
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: Un token por NIF, definido en la configuración del servicio.
+
+  parameters:
+    Nif:
+      name: nif
+      in: path
+      required: true
+      description: NIF del obligado. Admite minúsculas.
+      schema:
+        type: string
+      example: "89890001K"
+
+  responses:
+    PeticionInvalida:
+      description: JSON mal formado, fecha inválida o registro que incumple las reglas de la AEAT
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NoAutorizado:
+      description: Falta el token, no es el del NIF, o el NIF no está configurado
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NoEncontrado:
+      description: No existe
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Conflicto:
+      description: Dos peticiones a la vez sobre la misma cadena. Se puede reintentar.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    ErrorInterno:
+      description: Fallo del servicio
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+      example:
+        error: "record: validation error: Destinatarios is required for TipoFactura 'F1' aeat error: 1189"
+
+    Importe:
+      type: integer
+      format: int64
+      description: En céntimos. 12100 son 121,00 €.
+
+    Porcentaje:
+      type: integer
+      format: int64
+      description: En centésimas. 2100 es el 21 %.
+
+    Fecha:
+      type: string
+      pattern: '^\d{2}-\d{2}-\d{4}$'
+      example: "10-09-2026"
+
+    IDFacturaExpedida:
+      type: object
+      required: [IDEmisorFactura, NumSerieFactura, FechaExpedicionFactura]
+      properties:
+        IDEmisorFactura:
+          type: string
+          description: NIF de quien emite. Coincide con el NIF de la ruta.
+        NumSerieFactura:
+          type: string
+          maxLength: 60
+        FechaExpedicionFactura:
+          $ref: '#/components/schemas/Fecha'
+
+    Persona:
+      type: object
+      required: [NombreRazon]
+      description: Lleva NIF o IDOtro, nunca los dos.
+      properties:
+        NombreRazon:
+          type: string
+        NIF:
+          type: string
+          description: NIF español, nueve caracteres.
+        IDOtro:
+          type: object
+          required: [IDType, ID]
+          description: Identificación de quien no tiene NIF español.
+          properties:
+            CodigoPais:
+              type: string
+              example: "FR"
+            IDType:
+              type: string
+              enum: ["02", "03", "04", "05", "06", "07"]
+              description: 02 NIF-IVA, 03 pasaporte, 04 documento del país, 05 certificado de residencia, 06 otro documento, 07 no censado.
+            ID:
+              type: string
+
+    DetalleDesglose:
+      type: object
+      required: [BaseImponibleOimporteNoSujeto]
+      description: Lleva CalificacionOperacion o OperacionExenta, nunca las dos.
+      properties:
+        Impuesto:
+          type: string
+          enum: ["01", "02", "03", "05"]
+          description: 01 IVA, 02 IPSI, 03 IGIC, 05 otros.
+        ClaveRegimen:
+          type: string
+          description: 01 es el régimen general.
+        CalificacionOperacion:
+          type: string
+          enum: [S1, S2, N1, N2]
+        OperacionExenta:
+          type: string
+          enum: [E1, E2, E3, E4, E5, E6, E7, E8]
+        TipoImpositivo:
+          $ref: '#/components/schemas/Porcentaje'
+        BaseImponibleOimporteNoSujeto:
+          $ref: '#/components/schemas/Importe'
+        CuotaRepercutida:
+          $ref: '#/components/schemas/Importe'
+        TipoRecargoEquivalencia:
+          $ref: '#/components/schemas/Porcentaje'
+        CuotaRecargoEquivalencia:
+          $ref: '#/components/schemas/Importe'
+
+    RegistroAlta:
+      type: object
+      required:
+        - IDFactura
+        - NombreRazonEmisor
+        - TipoFactura
+        - DescripcionOperacion
+        - Desglose
+        - CuotaTotal
+        - ImporteTotal
+      description: |
+        El servicio rellena y sobrescribe IDVersion, Encadenamiento,
+        SistemaInformatico, FechaHoraHusoGenRegistro, TipoHuella y Huella.
+      properties:
+        IDFactura:
+          $ref: '#/components/schemas/IDFacturaExpedida'
+        NombreRazonEmisor:
+          type: string
+          maxLength: 120
+        TipoFactura:
+          type: string
+          enum: [F1, F2, F3, R1, R2, R3, R4, R5]
+          description: |
+            F1 completa, F2 simplificada, F3 sustitutiva de simplificadas,
+            R1 a R5 rectificativas. F1, F3 y R1 a R4 exigen Destinatarios;
+            F2 y R5 no lo admiten.
+        TipoRectificativa:
+          type: string
+          enum: [S, I]
+          description: S por sustitución, I por diferencias. Solo en rectificativas.
+        FacturasRectificadas:
+          type: object
+          properties:
+            IDFacturaRectificada:
+              type: array
+              items:
+                $ref: '#/components/schemas/IDFacturaExpedida'
+        FacturasSustituidas:
+          type: object
+          properties:
+            IDFacturaSustituida:
+              type: array
+              items:
+                $ref: '#/components/schemas/IDFacturaExpedida'
+        ImporteRectificacion:
+          type: object
+          required: [BaseRectificada, CuotaRectificada]
+          description: Importes de la factura rectificada. Solo con TipoRectificativa S.
+          properties:
+            BaseRectificada:
+              $ref: '#/components/schemas/Importe'
+            CuotaRectificada:
+              $ref: '#/components/schemas/Importe'
+            CuotaRecargoRectificado:
+              $ref: '#/components/schemas/Importe'
+        FechaOperacion:
+          $ref: '#/components/schemas/Fecha'
+        DescripcionOperacion:
+          type: string
+          maxLength: 500
+        Destinatarios:
+          type: object
+          description: Si viene, al menos un destinatario. Hasta 1000.
+          properties:
+            IDDestinatario:
+              type: array
+              minItems: 1
+              items:
+                $ref: '#/components/schemas/Persona'
+        Desglose:
+          type: object
+          required: [DetalleDesglose]
+          properties:
+            DetalleDesglose:
+              type: array
+              minItems: 1
+              maxItems: 12
+              items:
+                $ref: '#/components/schemas/DetalleDesglose'
+        CuotaTotal:
+          $ref: '#/components/schemas/Importe'
+        ImporteTotal:
+          $ref: '#/components/schemas/Importe'
+        RefExterna:
+          type: string
+          description: Referencia tuya. La AEAT la guarda y no la usa.
+
+    RegistroAnulacion:
+      type: object
+      required: [IDFactura]
+      properties:
+        IDFactura:
+          type: object
+          required:
+            - IDEmisorFacturaAnulada
+            - NumSerieFacturaAnulada
+            - FechaExpedicionFacturaAnulada
+          properties:
+            IDEmisorFacturaAnulada:
+              type: string
+            NumSerieFacturaAnulada:
+              type: string
+            FechaExpedicionFacturaAnulada:
+              $ref: '#/components/schemas/Fecha'
+        SinRegistroPrevio:
+          type: string
+          enum: [S, N]
+          description: S si la AEAT nunca llegó a recibir la factura.
+        RefExterna:
+          type: string
+
+    Entry:
+      type: object
+      description: El registro tal como quedó en la cadena.
+      properties:
+        Operacion:
+          type: string
+          enum: [alta, anulacion]
+        Alta:
+          type: object
+          description: El registro de alta completo, con la huella y el encadenamiento.
+        Anulacion:
+          type: object
+        Secuencia:
+          type: integer
+          format: int64
+          description: Posición en la cadena de ese NIF, empezando en 1.
+        Huella:
+          type: string
+          description: Huella SHA-256 encadenada, en hexadecimal.
+        IDFactura:
+          type: object
+          properties:
+            NIF:
+              type: string
+            NumSerie:
+              type: string
+            Fecha:
+              $ref: '#/components/schemas/Fecha'
+        Correccion:
+          type: boolean
+          description: El registro corrige a otro anterior con el mismo número.
+
+    ResultadoAEAT:
+      type: object
+      required: [estado]
+      properties:
+        estado:
+          type: string
+          enum: [Pendiente, Correcto, AceptadoConErrores, Incorrecto]
+          description: |
+            Pendiente: aún no remitida o sin respuesta.
+            Correcto: registrada.
+            AceptadoConErrores: registrada, pero hay que subsanarla con ?subsanacion.
+            Incorrecto: rechazada, no consta en la AEAT; corregir y mandar con ?tras_rechazo.
+        codigo:
+          type: string
+          description: Código de error de la AEAT.
+          example: "1189"
+        descripcion:
+          type: string
+        csv:
+          type: string
+          description: |
+            Justificante de la remisión, 16 caracteres. Es del envío, no de la
+            factura. La AEAT no permite recuperarlo después, así que conviene
+            guardarlo. No sale en las rechazadas.
+
+    RespuestaRegistro:
+      type: object
+      properties:
+        entry:
+          $ref: '#/components/schemas/Entry'
+        avisos:
+          type: array
+          description: Descuadres que la AEAT acepta. No son errores.
+          items:
+            type: string
+        aeat:
+          $ref: '#/components/schemas/ResultadoAEAT'
+        qr:
+          type: string
+          description: URL que va dentro del QR de la factura. Las anulaciones no lo llevan.

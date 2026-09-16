@@ -84,6 +84,10 @@ Cada NIF lleva el suyo porque el certificado es de quien presenta. Si presentas
 por varios clientes con el mismo certificado, como una gestoría apoderada, se
 repite la ruta en cada uno.
 
+La referencia con ejemplos está en [docs/api.md](docs/api.md), y la definición
+OpenAPI, para Swagger UI o para generar un cliente, en
+[docs/openapi.yaml](docs/openapi.yaml).
+
 ```
 POST /v1/{nif}/alta      registra una factura (cuerpo: RegistroAlta en JSON)
 POST /v1/{nif}/anular    registra una anulación
@@ -93,8 +97,8 @@ GET  /healthz
 ```
 
 Todas menos `/healthz` piden `Authorization: Bearer <token>`. Las tres primeras
-responden `{"entry": ..., "avisos": [...]}`, y `/estado` añade lo que contestó
-la AEAT:
+responden `{"entry": ..., "avisos": [...]}`, con `"qr"`, la URL que va dentro
+del QR de la factura, y `/estado` añade lo que contestó la AEAT:
 
 ```json
 "aeat": {"estado": "Pendiente"}
