@@ -76,8 +76,13 @@ Ver el [Artículo 13 del RD 1007/2023](https://www.boe.es/buscar/act.php?id=BOE-
 ## Servicio
 
 `cmd/verifactud` es un binario HTTP sobre la librería, para usarla desde
-cualquier lenguaje. Un fichero de configuración (`cmd/verifactud/verifactud.example.json`)
-con el certificado, el sistema informático y un token por NIF.
+cualquier lenguaje. Un fichero de configuración
+(`cmd/verifactud/verifactud.example.json`) con el sistema informático y, por
+cada NIF, su token y su certificado.
+
+Cada NIF lleva el suyo porque el certificado es de quien presenta. Si presentas
+por varios clientes con el mismo certificado, como una gestoría apoderada, se
+repite la ruta en cada uno.
 
 ```
 POST /v1/{nif}/alta      registra una factura (cuerpo: RegistroAlta en JSON)
