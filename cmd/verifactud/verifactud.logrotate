@@ -1,0 +1,10 @@
+/var/log/verifactud/verifactud.log {
+    weekly
+    rotate 52
+    compress
+    delaycompress
+    missingok
+    notifempty
+    copytruncate
+    create 0640 verifactud verifactud
+}

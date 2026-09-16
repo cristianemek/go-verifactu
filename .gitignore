@@ -58,5 +58,8 @@ cmd/verifactud/*.pem
 cmd/verifactud/*.key
 cmd/verifactud/*.crt
 
+# logs del servicio: llevan NIF y numeros de factura
+*.log
+
 # configuracion local para probar con Docker (certificado y tokens)
 docker-local/

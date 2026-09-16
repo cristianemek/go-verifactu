@@ -290,8 +290,13 @@ La diferencia está en si la factura llegó a entrar en la AEAT:
 
 | parámetro | cuándo | qué manda |
 | --- | --- | --- |
-| `?tras_rechazo` | la AEAT la **rechazó**, así que no consta | `Subsanacion: S` y `RechazoPrevio: X` |
+| `?tras_rechazo` | la AEAT **rechazó** el último envío de esa factura | `Subsanacion: S` y `RechazoPrevio: X` o `S` |
 | `?subsanacion` | la AEAT la **tiene registrada** y hay que corregir un dato | `Subsanacion: S` |
+
+Con `?tras_rechazo` no tienes que distinguir qué se rechazó. El servicio mira
+el historial de esa factura: si ninguna versión llegó a aceptarse, manda `X`;
+si alguna se aceptó y lo rechazado fue una subsanación posterior, manda `S`.
+Son las dos operativas que la AEAT distingue, y el servicio ya sabe cuál toca.
 
 Si te equivocas de parámetro, la AEAT lo rechaza: con `?subsanacion` sobre algo
 que no consta, y con `?tras_rechazo` sobre algo que sí consta.

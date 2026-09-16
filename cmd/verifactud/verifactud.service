@@ -21,6 +21,7 @@ ProtectSystem=strict
 ProtectHome=true
 PrivateTmp=true
 ReadWritePaths=/var/lib/verifactud
+LogsDirectory=verifactud
 
 [Install]
 WantedBy=multi-user.target

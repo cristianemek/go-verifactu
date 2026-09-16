@@ -29,7 +29,7 @@ func main() {
 	}
 
 	if cfg.Log != "" {
-		f, err := os.OpenFile(cfg.Log, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+		f, err := os.OpenFile(cfg.Log, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
 		if err != nil {
 			slog.Error("Error opening log file", "error", err)
 			os.Exit(1)

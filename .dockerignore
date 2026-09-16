@@ -8,4 +8,5 @@ cmd/verifactud/*.json
 *.p12
 *.exe
 docker-local/
+*.log
 .env

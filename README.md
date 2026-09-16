@@ -124,6 +124,16 @@ sudo systemctl enable --now verifactud
 La unidad espera el binario en `/usr/local/bin`, la configuración y el
 certificado en `/etc/verifactud`, y los datos en `/var/lib/verifactud`.
 
+Para tener el log en un fichero, `"log": "/var/log/verifactud/verifactud.log"`
+en la configuración. Sale en JSON, una línea por evento. Para rotarlo:
+
+```
+sudo cp cmd/verifactud/verifactud.logrotate /etc/logrotate.d/verifactud
+```
+
+Guarda un año, por semanas y comprimido. No lo pongas dentro del directorio de
+datos: ese no se borra nunca, y el log sí.
+
 Con Docker, con la configuración y el certificado en `/etc/verifactud`:
 
 ```
