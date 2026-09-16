@@ -91,10 +91,14 @@ func TestCargarConfigNIFEnMayusculas(t *testing.T) {
 	if _, ok := cfg.Tenants["89890001K"]; !ok {
 		t.Errorf("cargarConfig() did not convert NIF to uppercase, expected key '89890001K'")
 	}
+
+	if cfg.Log != "" {
+		t.Errorf("cargarConfig() log path = %s, want empty string", cfg.Log)
+	}
 }
 
 func TestCargarConfigExigeCertificadoPorTenant(t *testing.T) {
-	cfg := fmt.Sprintf(`{
+	cfg := `{
 			"listen": ":8080",
 			"data": "./datos",
 			"entorno": "pruebas",
@@ -122,7 +126,7 @@ func TestCargarConfigExigeCertificadoPorTenant(t *testing.T) {
 				"token": "token123"
 				}
 			}
-			}`)
+			}`
 
 	path := filepath.Join(t.TempDir(), "config.json")
 

@@ -28,6 +28,17 @@ func main() {
 		os.Exit(1)
 	}
 
+	if cfg.Log != "" {
+		f, err := os.OpenFile(cfg.Log, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+		if err != nil {
+			slog.Error("Error opening log file", "error", err)
+			os.Exit(1)
+		}
+		defer f.Close()
+
+		slog.SetDefault(slog.New(slog.NewJSONHandler(f, nil)))
+	}
+
 	srv, err := construirServidor(cfg)
 	if err != nil {
 		slog.Error("Error constructing server", "error", err)

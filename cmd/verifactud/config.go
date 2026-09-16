@@ -22,6 +22,7 @@ type Config struct {
 	RemisionCada string                    `json:"remision_cada"`
 	Sistema      record.SistemaInformatico `json:"sistema"`
 	Tenants      map[string]TenantConfig   `json:"tenants"`
+	Log          string                    `json:"log"`
 }
 
 func cargarConfig(path string) (*Config, error) {
