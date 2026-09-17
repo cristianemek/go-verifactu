@@ -43,6 +43,12 @@ func Conformidad(t *testing.T, nuevo func(t *testing.T) verifactu.Store) {
 	t.Run("EnvioDe", func(t *testing.T) {
 		testEnvioDe(t, nuevo(t))
 	})
+	t.Run("Cadena", func(t *testing.T) {
+		testCadena(t, nuevo(t))
+	})
+	t.Run("UltimoEnvio", func(t *testing.T) {
+		testUltimoEnvio(t, nuevo(t))
+	})
 }
 
 func buildEntry(secuencia uint64, numeroSerie string, operacion verifactu.Operacion) *verifactu.Entry {
@@ -477,5 +483,71 @@ func testEnvioDe(t *testing.T, s verifactu.Store) {
 				t.Errorf("EnvioDe() CSV = %q, want %q", envio.CSV, tc.csv)
 			}
 		})
+	}
+}
+
+func testCadena(t *testing.T, s verifactu.Store) {
+	tenant := buildTenant("89890001K")
+
+	cadena, err := s.Cadena(context.Background(), tenant)
+	if err != nil {
+		t.Fatalf("Cadena() vacia = %v, want nil", err)
+	}
+	if len(cadena) != 0 {
+		t.Fatalf("Cadena() vacia len = %d, want 0", len(cadena))
+	}
+
+	anexarCadena(t, s, tenant, 3)
+
+	cadena, err = s.Cadena(context.Background(), tenant)
+	if err != nil {
+		t.Fatalf("Cadena() = %v, want nil", err)
+	}
+
+	if len(cadena) != 3 {
+		t.Fatalf("Cadena() len = %d, want 3", len(cadena))
+	}
+
+	for i, entry := range cadena {
+		if entry.Secuencia != uint64(i+1) {
+			t.Errorf("Cadena()[%d] = %d, want %d", i, entry.Secuencia, i+1)
+		}
+	}
+}
+
+func testUltimoEnvio(t *testing.T, s verifactu.Store) {
+	tenant := buildTenant("89890001K")
+
+	envio := &verifactu.Envio{
+		Lineas: []verifactu.LineaEnvio{
+			buildLinea(1, record.EstadoRegistroCorrecto),
+			buildLinea(2, record.EstadoRegistroAceptadoConErrores),
+		},
+		CSV: "CSV-1",
+	}
+
+	err := s.AnexarEnvio(context.Background(), tenant, envio)
+	if err != nil {
+		t.Fatalf("AnexarEnvio() = %v, want nil", err)
+	}
+
+	err = s.AnexarEnvio(context.Background(), tenant, &verifactu.Envio{
+		Lineas: []verifactu.LineaEnvio{
+			buildLinea(3, record.EstadoRegistroIncorrecto),
+		},
+		CSV: "CSV-2",
+	})
+
+	if err != nil {
+		t.Fatalf("AnexarEnvio() = %v, want nil", err)
+	}
+
+	ultimo, err := s.UltimoEnvio(context.Background(), tenant)
+	if err != nil {
+		t.Fatalf("UltimoEnvio() = %v, want nil", err)
+	}
+
+	if ultimo.CSV != "CSV-2" {
+		t.Errorf("UltimoEnvio() CSV = %q, want %q", ultimo.CSV, "CSV-2")
 	}
 }
