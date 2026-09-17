@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/cristianemek/go-verifactu"
+	"github.com/cristianemek/go-verifactu/store/storetest"
 )
 
 func TestFicheroValidaElTenant(t *testing.T) {
@@ -79,4 +80,14 @@ func TestFicheroValidaElTenant(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestConformidad(t *testing.T) {
+	storetest.Conformidad(t, func(t *testing.T) verifactu.Store {
+		s, err := New(t.TempDir())
+		if err != nil {
+			t.Fatalf("New() = %v", err)
+		}
+		return s
+	})
 }
