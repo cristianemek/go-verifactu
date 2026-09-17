@@ -39,6 +39,14 @@ jobs:
       - name: Coverage total
         run: go tool cover -func=coverage.out | tail -1
 
+      - name: Vet verifactud
+        working-directory: cmd/verifactud
+        run: go vet ./...
+
+      - name: Test verifactud
+        working-directory: cmd/verifactud
+        run: go test -race ./...
+
       - name: Upload coverage to Codecov
         if: matrix.go-version == 'stable'
         uses: codecov/codecov-action@v4

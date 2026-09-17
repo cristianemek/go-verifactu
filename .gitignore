@@ -12,8 +12,8 @@ coverage.*
 profile.cov
 
 # Go tooling
-go.work
-go.work.sum
+# go.work SÍ se versiona: cmd/verifactud compila contra el código local de la
+# librería, no contra la última versión publicada. A quien hace go get no le afecta.
 # vendor/
 
 # Certificados y material criptográfico

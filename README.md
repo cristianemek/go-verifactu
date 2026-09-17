@@ -116,7 +116,10 @@ acabar la espera. Por si acaso, el servicio revisa la cola cada `remision_cada`
 Con systemd:
 
 ```
-go install github.com/cristianemek/go-verifactu/cmd/verifactud@latest
+git clone https://github.com/cristianemek/go-verifactu
+cd go-verifactu
+CGO_ENABLED=0 go build -o verifactud ./cmd/verifactud
+sudo cp verifactud /usr/local/bin/
 sudo cp cmd/verifactud/verifactud.service /etc/systemd/system/
 sudo systemctl enable --now verifactud
 ```
