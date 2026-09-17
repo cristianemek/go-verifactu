@@ -47,6 +47,21 @@ jobs:
         working-directory: cmd/verifactud
         run: go test -race ./...
 
+      - name: Vet sqlite
+        working-directory: store/sqlite
+        run: go vet ./...
+
+      - name: Test sqlite
+        working-directory: store/sqlite
+        run: go test -race ./...
+
+      - name: Root module has no dependencies
+        run: |
+          if grep -q '^require' go.mod; then
+            echo "go.mod de la raiz tiene require: la libreria debe ir sin dependencias"
+            exit 1
+          fi
+
       - name: Upload coverage to Codecov
         if: matrix.go-version == 'stable'
         uses: codecov/codecov-action@v4
