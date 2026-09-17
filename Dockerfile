@@ -1,5 +1,5 @@
 # Compila verifactud. Contexto: la raiz del repositorio (hace falta go.work).
-FROM golang:1.22-alpine AS build
+FROM golang:1.27-alpine AS build
 WORKDIR /src
 COPY . .
 RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /verifactud ./cmd/verifactud

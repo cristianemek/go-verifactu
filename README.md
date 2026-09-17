@@ -10,7 +10,7 @@ Librería en Go para VERI*FACTU, el sistema de facturación de la AEAT.
 Calcula la huella encadenada, monta la URL del QR y remite los registros a
 Hacienda.
 
-Sin dependencias. Go 1.22+.
+Sin dependencias. Go 1.27+.
 
 En desarrollo: la API puede cambiar hasta la v1.0.0.
 
