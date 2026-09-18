@@ -49,8 +49,8 @@ func New(ruta string) (s *Store, err error) {
 	db, err := sql.Open("sqlite", ruta)
 
 	defer func() {
-		if err != nil && db != nil {
-			s.db.Close()
+		if err != nil {
+			db.Close()
 		}
 	}()
 
@@ -105,4 +105,8 @@ func aplicarMigracion(db *sql.DB, migrationFile string, version int) error {
 	}
 
 	return nil
+}
+
+func (s *Store) Close() error {
+	return s.db.Close()
 }
