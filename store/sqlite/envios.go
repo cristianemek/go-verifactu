@@ -2,10 +2,13 @@ package sqlite
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
+	"errors"
 	"time"
 
 	"github.com/cristianemek/go-verifactu"
+	"github.com/cristianemek/go-verifactu/record"
 )
 
 // EnvioDe implements [verifactu.Store].
@@ -90,5 +93,102 @@ func (s *Store) AnexarEnvio(ctx context.Context, t verifactu.Tenant, envio *veri
 
 // UltimoEnvio implements [verifactu.Store].
 func (s *Store) UltimoEnvio(ctx context.Context, t verifactu.Tenant) (*verifactu.Envio, error) {
-	panic("unimplemented")
+	consulta := `
+	SELECT id, instante, csv, nif_presentador, timestamp_presentacion, estado_envio, tiempo_espera_segundos
+  	FROM envios
+ 	WHERE tenant_nif = ? AND tenant_sistema = ?
+ 	ORDER BY id DESC
+ 	LIMIT 1
+	`
+
+	row := s.db.QueryRowContext(ctx, consulta, t.NIF, t.IDSistemaInformatico)
+
+	var id, segundos int64
+	var instante, timestampPresentacion, estado, csv, nifPresentador string
+
+	if err := row.Scan(&id, &instante, &csv, &nifPresentador, &timestampPresentacion, &estado, &segundos); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, verifactu.ErrNoEncontrado
+		}
+		return nil, err
+	}
+
+	tiempoEspera := time.Duration(segundos) * time.Second
+	instanteParseado, err := time.Parse(time.RFC3339, instante)
+	if err != nil {
+		return nil, err
+	}
+
+	timestampPresentacionParseado, err := time.Parse(time.RFC3339, timestampPresentacion)
+	if err != nil {
+		return nil, err
+	}
+
+	lineas, err := s.lineasDe(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	return &verifactu.Envio{
+		Instante:              instanteParseado,
+		CSV:                   csv,
+		NIFPresentador:        nifPresentador,
+		TimestampPresentacion: timestampPresentacionParseado,
+		EstadoEnvio:           record.EstadoEnvio(estado),
+		Lineas:                lineas,
+		TiempoEspera:          tiempoEspera,
+	}, nil
+
+}
+
+func (s *Store) lineasDe(ctx context.Context, envioID int64) ([]verifactu.LineaEnvio, error) {
+	consulta := `
+	SELECT secuencia, operacion, factura_nif, factura_num_serie, factura_fecha, estado, codigo_error, descripcion, duplicado
+	 FROM lineas
+	WHERE envio_id = ?
+	ORDER BY secuencia ASC
+	`
+
+	rows, err := s.db.QueryContext(ctx, consulta, envioID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var lineas []verifactu.LineaEnvio
+	for rows.Next() {
+		var linea verifactu.LineaEnvio
+
+		var operacion, estado, fecha string
+		var duplicado sql.NullString
+
+		if err := rows.Scan(&linea.Secuencia, &operacion, &linea.IDFactura.NIF, &linea.IDFactura.NumSerie, &fecha, &estado, &linea.CodigoError, &linea.Descripcion, &duplicado); err != nil {
+			return nil, err
+		}
+
+		fechaParseada, err := record.ParseFecha(fecha)
+		if err != nil {
+			return nil, err
+		}
+
+		linea.Operacion = verifactu.Operacion(operacion)
+		linea.Estado = record.EstadoRegistro(estado)
+
+		linea.IDFactura.Fecha = fechaParseada
+		if duplicado.Valid {
+			var r record.RegistroDuplicado
+			if err := json.Unmarshal([]byte(duplicado.String), &r); err != nil {
+				return nil, err
+			}
+			linea.Duplicado = &r
+		}
+
+		lineas = append(lineas, linea)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return lineas, nil
 }
