@@ -98,11 +98,6 @@ func (s *Store) Buscar(ctx context.Context, t verifactu.Tenant, id verifactu.IDF
 	return unaEntrada(row)
 }
 
-// AnexarEnvio implements [verifactu.Store].
-func (s *Store) AnexarEnvio(ctx context.Context, t verifactu.Tenant, envio *verifactu.Envio) error {
-	panic("unimplemented")
-}
-
 // Cadena implements [verifactu.Store].
 func (s *Store) Cadena(ctx context.Context, t verifactu.Tenant) ([]*verifactu.Entry, error) {
 	consulta := `SELECT entrada FROM entradas
@@ -148,18 +143,8 @@ func (s *Store) Cadena(ctx context.Context, t verifactu.Tenant) ([]*verifactu.En
 	return entries, nil
 }
 
-// EnvioDe implements [verifactu.Store].
-func (s *Store) EnvioDe(ctx context.Context, t verifactu.Tenant, secuencia uint64) (*verifactu.Envio, error) {
-	panic("unimplemented")
-}
-
 // Pendientes implements [verifactu.Store].
 func (s *Store) Pendientes(ctx context.Context, t verifactu.Tenant, limite int) ([]*verifactu.Entry, error) {
-	panic("unimplemented")
-}
-
-// UltimoEnvio implements [verifactu.Store].
-func (s *Store) UltimoEnvio(ctx context.Context, t verifactu.Tenant) (*verifactu.Envio, error) {
 	panic("unimplemented")
 }
 
