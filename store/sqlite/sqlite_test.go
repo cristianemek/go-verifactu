@@ -1,10 +1,16 @@
 package sqlite
 
 import (
+	"context"
 	"database/sql"
+	"errors"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
+
+	"github.com/cristianemek/go-verifactu"
+	"github.com/cristianemek/go-verifactu/record"
 )
 
 func TestNewReabrirNoAplica(t *testing.T) {
@@ -84,6 +90,64 @@ func TestNewVersionDelFuturo(t *testing.T) {
 
 	if !strings.Contains(err.Error(), "999") {
 		t.Fatalf("Expected error message to contain '999', but got: %v", err)
+	}
+
+}
+
+func TestEjecutarSQL(t *testing.T) {
+	dir := t.TempDir()
+
+	dbPath := filepath.Join(dir, "test.db")
+
+	store, err := New(dbPath)
+	if err != nil {
+		t.Fatalf("Error creating store: %v", err)
+	}
+
+	defer store.Close()
+
+	tenant := verifactu.Tenant{
+		NIF:                  "89890001K",
+		IDSistemaInformatico: "01",
+	}
+
+	entry := &verifactu.Entry{
+		Secuencia: 1,
+		Operacion: verifactu.OperacionAlta,
+		IDFactura: verifactu.IDFactura{
+			NIF:      "89890001K",
+			NumSerie: "A001",
+			Fecha:    record.Fecha(time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)),
+		},
+	}
+
+	err = store.Anexar(context.Background(), tenant, entry)
+	if err != nil {
+		t.Fatalf("Error anexing entry: %v", err)
+	}
+
+	entry.Secuencia = 2
+	err = store.Anexar(context.Background(), tenant, entry)
+
+	if err == nil {
+		t.Fatalf("Expected error due to duplicate entry, but got none")
+	}
+
+	if !errors.Is(err, verifactu.ErrDuplicado) {
+		t.Fatalf("Expected ErrDuplicado, but got: %v", err)
+	}
+
+	entry.Secuencia = 5
+	entry.IDFactura.NumSerie = "A002"
+
+	err = store.Anexar(context.Background(), tenant, entry)
+
+	if err == nil {
+		t.Fatalf("Expected error due to non-sequential sequence, but got none")
+	}
+
+	if !errors.Is(err, verifactu.ErrConflictoDeSecuencia) {
+		t.Fatalf("Expected ErrConflictoDeSecuencia, but got: %v", err)
 	}
 
 }
