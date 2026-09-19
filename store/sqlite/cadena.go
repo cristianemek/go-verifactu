@@ -2,7 +2,9 @@ package sqlite
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
+	"errors"
 
 	"github.com/cristianemek/go-verifactu"
 )
@@ -69,4 +71,118 @@ func (s *Store) Anexar(ctx context.Context, t verifactu.Tenant, e *verifactu.Ent
 	}
 
 	return tx.Commit()
+}
+
+func (s *Store) Ultimo(ctx context.Context, t verifactu.Tenant) (*verifactu.Entry, error) {
+	consulta := `SELECT entrada FROM entradas
+			 WHERE tenant_nif = ? AND tenant_sistema = ?
+			 ORDER BY secuencia DESC
+			 LIMIT 1`
+
+	row := s.db.QueryRowContext(ctx, consulta, t.NIF, t.IDSistemaInformatico)
+
+	return unaEntrada(row)
+
+}
+
+func (s *Store) Buscar(ctx context.Context, t verifactu.Tenant, id verifactu.IDFactura, op verifactu.Operacion) (*verifactu.Entry, error) {
+	consulta := `SELECT entrada FROM entradas
+					WHERE tenant_nif = ? AND tenant_sistema = ?
+					AND factura_nif = ? AND factura_num_serie = ? AND factura_fecha = ?
+					AND operacion = ?
+					ORDER BY secuencia ASC
+					LIMIT 1`
+
+	row := s.db.QueryRowContext(ctx, consulta, t.NIF, t.IDSistemaInformatico, id.NIF, id.NumSerie, id.Fecha.Format(), string(op))
+
+	return unaEntrada(row)
+}
+
+// AnexarEnvio implements [verifactu.Store].
+func (s *Store) AnexarEnvio(ctx context.Context, t verifactu.Tenant, envio *verifactu.Envio) error {
+	panic("unimplemented")
+}
+
+// Cadena implements [verifactu.Store].
+func (s *Store) Cadena(ctx context.Context, t verifactu.Tenant) ([]*verifactu.Entry, error) {
+	consulta := `SELECT entrada FROM entradas
+ WHERE tenant_nif = ? AND tenant_sistema = ?
+ ORDER BY secuencia ASC
+`
+	rows, err := s.db.QueryContext(
+		ctx,
+		consulta,
+		t.NIF,
+		t.IDSistemaInformatico,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var entries []*verifactu.Entry
+
+	for rows.Next() {
+		var datos []byte
+		err := rows.Scan(&datos)
+
+		if err != nil {
+			return nil, err
+		}
+
+		var e verifactu.Entry
+
+		err = json.Unmarshal(datos, &e)
+
+		if err != nil {
+			return nil, err
+		}
+
+		entries = append(entries, &e)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return entries, nil
+}
+
+// EnvioDe implements [verifactu.Store].
+func (s *Store) EnvioDe(ctx context.Context, t verifactu.Tenant, secuencia uint64) (*verifactu.Envio, error) {
+	panic("unimplemented")
+}
+
+// Pendientes implements [verifactu.Store].
+func (s *Store) Pendientes(ctx context.Context, t verifactu.Tenant, limite int) ([]*verifactu.Entry, error) {
+	panic("unimplemented")
+}
+
+// UltimoEnvio implements [verifactu.Store].
+func (s *Store) UltimoEnvio(ctx context.Context, t verifactu.Tenant) (*verifactu.Envio, error) {
+	panic("unimplemented")
+}
+
+func unaEntrada(row *sql.Row) (*verifactu.Entry, error) {
+	var datos []byte
+
+	err := row.Scan(&datos)
+
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, verifactu.ErrNoEncontrado
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	var e verifactu.Entry
+
+	err = json.Unmarshal(datos, &e)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &e, nil
 }

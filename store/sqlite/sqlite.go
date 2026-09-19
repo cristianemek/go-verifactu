@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/fs"
 
+	"github.com/cristianemek/go-verifactu"
 	_ "modernc.org/sqlite"
 )
 
@@ -110,3 +111,5 @@ func aplicarMigracion(db *sql.DB, migrationFile string, version int) error {
 func (s *Store) Close() error {
 	return s.db.Close()
 }
+
+var _ verifactu.Store = (*Store)(nil)
