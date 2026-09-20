@@ -38,8 +38,7 @@ CREATE TABLE envios (
   csv                    TEXT    NOT NULL,
   nif_presentador        TEXT    NOT NULL,
   timestamp_presentacion TEXT    NOT NULL,
-  estado_envio           TEXT    NOT NULL
-                         CHECK (estado_envio IN ('Correcto', 'ParcialmenteCorrecto', 'Incorrecto')),
+  estado_envio           TEXT    NOT NULL,
   tiempo_espera_segundos INTEGER NOT NULL,
   creado_en              TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 ) STRICT;
@@ -62,12 +61,11 @@ CREATE TABLE lineas (
   tenant_nif        TEXT    NOT NULL,
   tenant_sistema    TEXT    NOT NULL,
   secuencia         INTEGER NOT NULL,
-  operacion         TEXT    NOT NULL CHECK (operacion IN ('alta', 'anulacion')),
+  operacion         TEXT    NOT NULL,
   factura_nif       TEXT    NOT NULL,
   factura_num_serie TEXT    NOT NULL,
   factura_fecha     TEXT    NOT NULL,
-  estado            TEXT    NOT NULL
-                    CHECK (estado IN ('Correcto', 'AceptadoConErrores', 'Incorrecto')),
+  estado            TEXT    NOT NULL,
   codigo_error      TEXT    NOT NULL,
   descripcion       TEXT    NOT NULL,
   duplicado         TEXT    CHECK (duplicado IS NULL OR json_valid(duplicado)),
