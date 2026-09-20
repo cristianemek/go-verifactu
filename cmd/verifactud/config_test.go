@@ -8,13 +8,14 @@ import (
 	"testing"
 )
 
-func escribirConfig(t *testing.T, nif, token string) string {
+func escribirConfig(t *testing.T, nif, token string, store string) string {
 	dir := t.TempDir()
 	config := fmt.Sprintf(`{
 			"listen": ":8080",
 			"data": "./datos",
 			"entorno": "pruebas",
 			"remision_cada": "60s",
+			"store": "%s",
 			"sistema": {
 				"NombreRazon": "TU EMPRESA SL",
 				"NIF": "89890001K",
@@ -34,7 +35,7 @@ func escribirConfig(t *testing.T, nif, token string) string {
 				"tipo_certificado": "representante"
 				}
 			}
-			}`, nif, token)
+			}`, store, nif, token)
 
 	path := filepath.Join(dir, "config.json")
 
@@ -66,7 +67,7 @@ func TestCargarConfigRechazaTokenVacio(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			path := escribirConfig(t, "89890001K", tc.token)
+			path := escribirConfig(t, "89890001K", tc.token, "ledger")
 
 			_, err := cargarConfig(path)
 
@@ -80,7 +81,7 @@ func TestCargarConfigRechazaTokenVacio(t *testing.T) {
 }
 
 func TestCargarConfigNIFEnMayusculas(t *testing.T) {
-	path := escribirConfig(t, "89890001k", "token123")
+	path := escribirConfig(t, "89890001k", "token123", "ledger")
 
 	cfg, err := cargarConfig(path)
 
@@ -138,6 +139,57 @@ func TestCargarConfigExigeCertificadoPorTenant(t *testing.T) {
 
 	if err == nil || !strings.Contains(err.Error(), "89890002F") {
 		t.Fatalf("cargarConfig() error = %v, want one naming 89890002F", err)
+	}
+
+}
+
+func TestStoreType(t *testing.T) {
+	testCases := []struct {
+		name    string
+		store   string
+		wantErr bool
+	}{
+		{
+			name:    "valid ledger store",
+			store:   "ledger",
+			wantErr: false,
+		},
+		{
+			name:    "un supported store type",
+			store:   "postgres",
+			wantErr: true,
+		},
+		{
+			name:    "valid sqlite store",
+			store:   "sqlite",
+			wantErr: false,
+		},
+		{
+			name:    "empty store type defaults to ledger",
+			store:   "",
+			wantErr: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			path := escribirConfig(t, "89890001K", "token123", tc.store)
+
+			cfg, err := cargarConfig(path)
+
+			if (tc.wantErr && err == nil) || (!tc.wantErr && err != nil) {
+				t.Errorf("cargarConfig() error = %v, wantErr %v", err, tc.wantErr)
+			}
+
+			if tc.store == "" && err == nil {
+				if cfg.Store != "ledger" {
+					t.Errorf("cargarConfig() store = %s, want default 'ledger'", cfg.Store)
+				}
+
+			}
+
+		})
+
 	}
 
 }

@@ -9,6 +9,13 @@ import (
 	"github.com/cristianemek/go-verifactu/record"
 )
 
+type TipoStore string
+
+const (
+	StoreLedger TipoStore = "ledger"
+	StoreSQLite TipoStore = "sqlite"
+)
+
 type TenantConfig struct {
 	Nombre          string `json:"nombre"`
 	Token           string `json:"token"`
@@ -22,6 +29,7 @@ type Config struct {
 	RemisionCada string                    `json:"remision_cada"`
 	Sistema      record.SistemaInformatico `json:"sistema"`
 	Tenants      map[string]TenantConfig   `json:"tenants"`
+	Store        TipoStore                 `json:"store"`
 	Log          string                    `json:"log"`
 }
 
@@ -52,6 +60,14 @@ func cargarConfig(path string) (*Config, error) {
 
 	if cfg.Entorno == "" {
 		return nil, fmt.Errorf("missing entorno in config")
+	}
+
+	if cfg.Store == "" {
+		cfg.Store = "ledger"
+	}
+
+	if cfg.Store != StoreLedger && cfg.Store != StoreSQLite {
+		return nil, fmt.Errorf("invalid store type in config: %s, available: %s, %s", cfg.Store, StoreLedger, StoreSQLite)
 	}
 
 	if len(cfg.Tenants) == 0 {
