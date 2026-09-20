@@ -19,6 +19,16 @@ import (
 )
 
 func main() {
+	if len(os.Args) > 1 && os.Args[1] == "migrar" {
+		err := comandoMigrar(os.Args[2:])
+		if err != nil {
+			slog.Error("Error migrating data", "error", err)
+			os.Exit(1)
+		}
+		slog.Info("Data migrated successfully")
+		return
+	}
+
 	path := flag.String("config", "verifactud.json", "Path to the configuration file")
 
 	flag.Parse()
