@@ -145,7 +145,62 @@ func (s *Store) Cadena(ctx context.Context, t verifactu.Tenant) ([]*verifactu.En
 
 // Pendientes implements [verifactu.Store].
 func (s *Store) Pendientes(ctx context.Context, t verifactu.Tenant, limite int) ([]*verifactu.Entry, error) {
-	panic("unimplemented")
+	consulta := `SELECT e.entrada FROM entradas e
+	WHERE e.tenant_nif = ? AND e.tenant_sistema = ?
+	AND NOT EXISTS (
+			SELECT 1 FROM lineas l
+			WHERE l.tenant_nif = e.tenant_nif
+				AND l.tenant_sistema = e.tenant_sistema
+				AND l.secuencia = e.secuencia
+				AND l.procesada = 1)
+	ORDER BY e.secuencia ASC
+`
+
+	queryArgs := []interface{}{t.NIF, t.IDSistemaInformatico}
+
+	if limite > 0 {
+		consulta += " LIMIT ?"
+		queryArgs = append(queryArgs, limite)
+	}
+
+	rows, err := s.db.QueryContext(
+		ctx,
+		consulta,
+		queryArgs...,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	var entries []*verifactu.Entry
+
+	for rows.Next() {
+		var datos []byte
+		err := rows.Scan(&datos)
+
+		if err != nil {
+			return nil, err
+		}
+
+		var e verifactu.Entry
+
+		err = json.Unmarshal(datos, &e)
+
+		if err != nil {
+			return nil, err
+		}
+
+		entries = append(entries, &e)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return entries, nil
 }
 
 func unaEntrada(row *sql.Row) (*verifactu.Entry, error) {
