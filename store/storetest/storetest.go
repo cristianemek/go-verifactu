@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/cristianemek/go-verifactu"
 	"github.com/cristianemek/go-verifactu/record"
@@ -523,7 +524,8 @@ func testUltimoEnvio(t *testing.T, s verifactu.Store) {
 			buildLinea(1, record.EstadoRegistroCorrecto),
 			buildLinea(2, record.EstadoRegistroAceptadoConErrores),
 		},
-		CSV: "CSV-1",
+		CSV:      "CSV-1",
+		Instante: time.Date(2024, 1, 2, 0, 0, 0, 123456788, time.UTC),
 	}
 
 	err := s.AnexarEnvio(context.Background(), tenant, envio)
@@ -535,7 +537,8 @@ func testUltimoEnvio(t *testing.T, s verifactu.Store) {
 		Lineas: []verifactu.LineaEnvio{
 			buildLinea(3, record.EstadoRegistroIncorrecto),
 		},
-		CSV: "CSV-2",
+		CSV:      "CSV-2",
+		Instante: time.Date(2024, 1, 2, 0, 0, 0, 123456789, time.UTC),
 	})
 
 	if err != nil {
@@ -545,6 +548,10 @@ func testUltimoEnvio(t *testing.T, s verifactu.Store) {
 	ultimo, err := s.UltimoEnvio(context.Background(), tenant)
 	if err != nil {
 		t.Fatalf("UltimoEnvio() = %v, want nil", err)
+	}
+
+	if !ultimo.Instante.Equal(time.Date(2024, 1, 2, 0, 0, 0, 123456789, time.UTC)) {
+		t.Errorf("UltimoEnvio() Instante = %v, want %v", ultimo.Instante, time.Date(2024, 1, 2, 0, 0, 0, 123456789, time.UTC))
 	}
 
 	if ultimo.CSV != "CSV-2" {

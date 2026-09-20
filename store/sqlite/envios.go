@@ -39,7 +39,7 @@ func (s *Store) AnexarEnvio(ctx context.Context, t verifactu.Tenant, envio *veri
 	(tenant_nif, tenant_sistema,instante,csv,nif_presentador,timestamp_presentacion, estado_envio, tiempo_espera_segundos) 
 	VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
 
-	result, err := tx.ExecContext(ctx, consulta, t.NIF, t.IDSistemaInformatico, envio.Instante.Format(time.RFC3339), envio.CSV, envio.NIFPresentador, envio.TimestampPresentacion.Format(time.RFC3339), string(envio.EstadoEnvio), int64(envio.TiempoEspera.Seconds()))
+	result, err := tx.ExecContext(ctx, consulta, t.NIF, t.IDSistemaInformatico, envio.Instante.Format(time.RFC3339Nano), envio.CSV, envio.NIFPresentador, envio.TimestampPresentacion.Format(time.RFC3339Nano), string(envio.EstadoEnvio), int64(envio.TiempoEspera.Seconds()))
 	if err != nil {
 		return err
 	}
@@ -130,12 +130,12 @@ func (s *Store) unEnvio(ctx context.Context, row *sql.Row) (*verifactu.Envio, er
 	}
 
 	tiempoEspera := time.Duration(segundos) * time.Second
-	instanteParseado, err := time.Parse(time.RFC3339, instante)
+	instanteParseado, err := time.Parse(time.RFC3339Nano, instante)
 	if err != nil {
 		return nil, err
 	}
 
-	timestampPresentacionParseado, err := time.Parse(time.RFC3339, timestampPresentacion)
+	timestampPresentacionParseado, err := time.Parse(time.RFC3339Nano, timestampPresentacion)
 	if err != nil {
 		return nil, err
 	}
