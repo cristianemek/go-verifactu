@@ -146,3 +146,37 @@ docker compose up -d
 Para actualizar, `docker compose up -d --build`; los logs, `docker compose logs -f`.
 
 El directorio de datos es todo el estado: copiarlo es la copia de seguridad.
+
+## Dónde se guardan los datos
+
+El servicio trae dos almacenes, y se elige con `"store"` en la configuración:
+
+| `store` | `data` es | cuándo |
+| --- | --- | --- |
+| `"ledger"` (por defecto) | un **directorio** con ficheros JSONL | lo sencillo: se lee con `cat`, sin dependencias |
+| `"sqlite"` | la **ruta de un fichero** `.db` | cuando la cadena crece: escribe el envío y sus líneas en una sola transacción y no carga todo en memoria |
+
+Los dos pasan la misma batería de pruebas (`store/storetest`), así que se
+comportan igual. SQLite vive en su propio módulo para que la librería siga sin
+dependencias.
+
+**Se elige una vez, al montar el servicio.** Cambiar de almacén sin más arranca
+una cadena vacía, y eso el servicio no lo detecta: la siguiente factura saldría
+como primer registro y la AEAT la marcaría con el error 2007, cadena
+desincronizada.
+
+Para pasar del `ledger` a SQLite hay un comando, **con el servicio parado**:
+
+```
+verifactud migrar -config /etc/verifactud/verifactud.json -a /var/lib/verifactud/verifactu.db
+```
+
+Copia las cadenas y los envíos de todos los NIF del fichero de configuración,
+tal cual: no recalcula huellas, porque tienen que seguir cuadrando con lo que ya
+tiene la AEAT. Al terminar comprueba que la cadena nueva es válida, que lo
+pendiente coincide y que el último envío es el mismo. Si algo no cuadra, para y
+lo dice; el origen no se toca en ningún caso.
+
+Después, `"store": "sqlite"` y `"data"` con la ruta del `.db` en la
+configuración, y a arrancar. **No borres el directorio del `ledger`:** es la
+copia de seguridad hasta que SQLite lleve semanas funcionando.
