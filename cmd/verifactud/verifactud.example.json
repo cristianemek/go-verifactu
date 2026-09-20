@@ -2,6 +2,7 @@
   "listen": ":9009",
   "data": "./datos",
   "entorno": "pruebas",
+  "store": "ledger",
   "remision_cada": "60s",
   "sistema": {
     "NombreRazon": "TU EMPRESA SL",
