@@ -15,6 +15,7 @@ import (
 	"github.com/cristianemek/go-verifactu"
 	"github.com/cristianemek/go-verifactu/aeat"
 	"github.com/cristianemek/go-verifactu/store/ledger"
+	"github.com/cristianemek/go-verifactu/store/sqlite"
 )
 
 func main() {
@@ -96,13 +97,27 @@ func main() {
 	}
 	<-hecho
 
+	if err := srv.cerrar(); err != nil {
+		slog.Error("Error closing store", "error", err)
+	}
 }
 
 func construirServidor(cfg *Config) (*servidor, error) {
-	store, err := ledger.New(cfg.Data)
+	var verifactuStore verifactu.Store
 
-	if err != nil {
-		return nil, fmt.Errorf("error creating store: %w", err)
+	switch cfg.Store {
+	case StoreLedger:
+		store, err := ledger.New(cfg.Data)
+		if err != nil {
+			return nil, fmt.Errorf("error creating ledger store: %w", err)
+		}
+		verifactuStore = store
+	case StoreSQLite:
+		store, err := sqlite.New(cfg.Data)
+		if err != nil {
+			return nil, fmt.Errorf("error creating sqlite store: %w", err)
+		}
+		verifactuStore = store
 	}
 
 	clientes := make(map[string]*aeat.Client, len(cfg.Tenants))
@@ -130,7 +145,7 @@ func construirServidor(cfg *Config) (*servidor, error) {
 	}
 
 	engine, err := verifactu.New(verifactu.Config{
-		Store:              store,
+		Store:              verifactuStore,
 		Transport:          &transportePorTenant{transportes: transportes},
 		SistemaInformatico: &cfg.Sistema,
 	})
@@ -142,7 +157,7 @@ func construirServidor(cfg *Config) (*servidor, error) {
 	for nif := range cfg.Tenants {
 		tenant := verifactu.Tenant{NIF: nif, IDSistemaInformatico: cfg.Sistema.IdSistemaInformatico}
 
-		cadena, err := store.Cadena(context.Background(), tenant)
+		cadena, err := verifactuStore.Cadena(context.Background(), tenant)
 
 		if err != nil {
 			return nil, fmt.Errorf("error retrieving chain for tenant %s: %w", nif, err)
@@ -161,5 +176,6 @@ func construirServidor(cfg *Config) (*servidor, error) {
 		sistema:  cfg.Sistema.IdSistemaInformatico,
 		avisar:   make(chan struct{}, 1),
 		entorno:  entornoQR(cfg.Entorno),
+		almacen:  verifactuStore,
 	}, nil
 }
