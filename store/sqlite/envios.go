@@ -13,7 +13,18 @@ import (
 
 // EnvioDe implements [verifactu.Store].
 func (s *Store) EnvioDe(ctx context.Context, t verifactu.Tenant, secuencia uint64) (*verifactu.Envio, error) {
-	panic("unimplemented")
+	consulta := `
+	SELECT e.id, e.instante, e.csv, e.nif_presentador, e.timestamp_presentacion, e.estado_envio, e.tiempo_espera_segundos
+	 FROM envios e
+	 JOIN lineas l ON l.envio_id = e.id
+	WHERE e.tenant_nif = ? AND e.tenant_sistema = ? AND l.secuencia = ?
+	ORDER BY e.id DESC
+	LIMIT 1
+`
+
+	row := s.db.QueryRowContext(ctx, consulta, t.NIF, t.IDSistemaInformatico, secuencia)
+
+	return s.unEnvio(ctx, row)
 }
 
 // AnexarEnvio implements [verifactu.Store].
@@ -103,6 +114,11 @@ func (s *Store) UltimoEnvio(ctx context.Context, t verifactu.Tenant) (*verifactu
 
 	row := s.db.QueryRowContext(ctx, consulta, t.NIF, t.IDSistemaInformatico)
 
+	return s.unEnvio(ctx, row)
+
+}
+
+func (s *Store) unEnvio(ctx context.Context, row *sql.Row) (*verifactu.Envio, error) {
 	var id, segundos int64
 	var instante, timestampPresentacion, estado, csv, nifPresentador string
 
@@ -138,7 +154,6 @@ func (s *Store) UltimoEnvio(ctx context.Context, t verifactu.Tenant) (*verifactu
 		Lineas:                lineas,
 		TiempoEspera:          tiempoEspera,
 	}, nil
-
 }
 
 func (s *Store) lineasDe(ctx context.Context, envioID int64) ([]verifactu.LineaEnvio, error) {
