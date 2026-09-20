@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"net/http"
 	"strings"
@@ -23,6 +24,7 @@ type servidor struct {
 	sistema  string
 	avisar   chan struct{}
 	entorno  record.Entorno
+	almacen  verifactu.Store
 }
 
 type respuestaRegistro struct {
@@ -424,4 +426,12 @@ func (s *servidor) qrDe(entry *verifactu.Entry) string {
 	}
 
 	return qr
+}
+
+func (s *servidor) cerrar() error {
+	c, ok := s.almacen.(io.Closer)
+	if !ok {
+		return nil
+	}
+	return c.Close()
 }
