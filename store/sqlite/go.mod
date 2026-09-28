@@ -3,7 +3,7 @@ module github.com/cristianemek/go-verifactu/store/sqlite
 go 1.27.0
 
 require (
-	github.com/cristianemek/go-verifactu v0.9.0
+	github.com/cristianemek/go-verifactu v0.10.0
 	modernc.org/sqlite v1.59.0
 )
 
