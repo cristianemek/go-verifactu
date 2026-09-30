@@ -798,3 +798,79 @@ func TestConexion(t *testing.T) {
 		})
 	}
 }
+
+func TestAltaCorreccion(t *testing.T) {
+	s, _ := servidorConStore(t)
+
+	if rec := peticion(s, facturaJSON); rec.Code != http.StatusCreated {
+		t.Fatalf("alta = %d, body: %s", rec.Code, rec.Body.String())
+	}
+
+	for _, query := range []string{"subsanacion", "tras_rechazo"} {
+		t.Run(query, func(t *testing.T) {
+			rec := peticionAlta(s, query, facturaJSON)
+			if rec.Code != http.StatusCreated {
+				t.Fatalf("alta?%s = %d, body: %s", query, rec.Code, rec.Body.String())
+			}
+
+			if resp := decodificar(t, rec); !resp.Entry.Correccion {
+				t.Errorf("alta?%s Correccion = false, want true", query)
+			}
+		})
+	}
+}
+
+type storeRoto struct {
+	*memory.Store
+	metodo string
+}
+
+func (s *storeRoto) Buscar(ctx context.Context, t verifactu.Tenant, id verifactu.IDFactura, op verifactu.Operacion) (*verifactu.Entry, error) {
+	if s.metodo == "Buscar" {
+		return nil, context.DeadlineExceeded
+	}
+	return s.Store.Buscar(ctx, t, id, op)
+}
+
+func (s *storeRoto) EnvioDe(ctx context.Context, t verifactu.Tenant, secuencia uint64) (*verifactu.Envio, error) {
+	if s.metodo == "EnvioDe" {
+		return nil, context.DeadlineExceeded
+	}
+	return s.Store.EnvioDe(ctx, t, secuencia)
+}
+
+func TestErrorInterno(t *testing.T) {
+	testCases := []struct {
+		name     string
+		metodo   string
+		peticion func(s *servidor) *httptest.ResponseRecorder
+	}{
+		{name: "alta", metodo: "Buscar", peticion: func(s *servidor) *httptest.ResponseRecorder { return peticion(s, facturaJSON) }},
+		{name: "anular", metodo: "Buscar", peticion: func(s *servidor) *httptest.ResponseRecorder { return peticionAnular(s, "", anulacionJSON) }},
+		{name: "estado, buscar", metodo: "Buscar", peticion: func(s *servidor) *httptest.ResponseRecorder {
+			return peticionGET(s, "serie=F-2026-001&fecha=10-09-2026")
+		}},
+		{name: "estado, envio", metodo: "EnvioDe", peticion: func(s *servidor) *httptest.ResponseRecorder {
+			return peticionGET(s, "serie=F-2026-001&fecha=10-09-2026")
+		}},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			store := &storeRoto{Store: memory.New()}
+			s := servidorSobre(t, store, nil)
+
+			if tc.metodo == "EnvioDe" {
+				if rec := peticion(s, facturaJSON); rec.Code != http.StatusCreated {
+					t.Fatalf("alta = %d", rec.Code)
+				}
+			}
+
+			store.metodo = tc.metodo
+
+			if rec := tc.peticion(s); rec.Code != http.StatusInternalServerError {
+				t.Errorf("status = %d, want 500, body: %s", rec.Code, rec.Body.String())
+			}
+		})
+	}
+}
