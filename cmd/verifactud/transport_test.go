@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"sync/atomic"
 	"testing"
 
 	"github.com/cristianemek/go-verifactu"
@@ -9,12 +10,46 @@ import (
 )
 
 type transporteFalso struct {
-	llamado bool
+	llamado  bool
+	llamadas atomic.Int32
+	estado   record.EstadoRegistro
+	codigo   string
+	err      error
 }
 
 func (tf *transporteFalso) Remitir(ctx context.Context, t verifactu.Tenant, lote record.RegFactuSistemaFacturacion) (record.RespuestaRegFactuSistemaFacturacion, error) {
 	tf.llamado = true
-	return record.RespuestaRegFactuSistemaFacturacion{}, nil
+	tf.llamadas.Add(1)
+
+	if tf.err != nil {
+		return record.RespuestaRegFactuSistemaFacturacion{}, tf.err
+	}
+
+	estado := tf.estado
+	if estado == "" {
+		estado = record.EstadoRegistroCorrecto
+	}
+
+	respuesta := record.RespuestaRegFactuSistemaFacturacion{CSV: "A-1", EstadoEnvio: record.EstadoEnvioCorrecto}
+
+	if estado != record.EstadoRegistroCorrecto {
+		respuesta.EstadoEnvio = record.EstadoEnvioIncorrecto
+	}
+
+	for _, r := range lote.RegistroFactura {
+		if r.RegistroAlta == nil {
+			continue
+		}
+
+		respuesta.RespuestaLinea = append(respuesta.RespuestaLinea, record.RespuestaLinea{
+			IDFactura:           r.RegistroAlta.IDFactura,
+			Operacion:           record.OperacionRespuesta{TipoOperacion: record.TipoOperacionAlta},
+			EstadoRegistro:      estado,
+			CodigoErrorRegistro: tf.codigo,
+		})
+	}
+
+	return respuesta, nil
 }
 
 func TestTransportePorTenantEnruta(t *testing.T) {
