@@ -50,6 +50,12 @@ func TestComparisonURLWithInvalidCharacters(t *testing.T) {
 			},
 		},
 		{
+			name: "NumSerieFactura with non-ASCII characters",
+			modifyRecord: func(r *RegistroAlta) {
+				r.IDFactura.NumSerieFactura = "F-2026-Ñ1"
+			},
+		},
+		{
 			name: "Invalid Ñ character",
 			modifyRecord: func(r *RegistroAlta) {
 				r.IDFactura.IDEmisorFactura = "12345678/Ñ33"

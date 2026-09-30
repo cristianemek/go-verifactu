@@ -15,6 +15,21 @@ func TestAvisos(t *testing.T) {
 		want         int
 	}{
 		{
+			name:         "con recargo de equivalencia",
+			cuotaTotal:   26200,
+			importeTotal: 126200,
+			desglose: Desglose{
+				DetalleDesglose: []DetalleDesglose{
+					{
+						BaseImponibleOimporteNoSujeto: 100000,
+						CuotaRepercutida:              new(Amount(21000)),
+						CuotaRecargoEquivalencia:      new(Amount(5200)),
+					},
+				},
+			},
+			want: 0,
+		},
+		{
 			name:         "cuadra exacto",
 			cuotaTotal:   2100,
 			importeTotal: 12100,

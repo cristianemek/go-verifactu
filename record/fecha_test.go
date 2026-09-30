@@ -100,6 +100,10 @@ func TestFechaJson(t *testing.T) {
 		t.Fatalf("Expected error for invalid JSON, got nil")
 	}
 
+	if err := json.Unmarshal([]byte(`20240101`), &fecha2); err == nil {
+		t.Fatalf("Expected error for a non-string date, got nil")
+	}
+
 }
 
 func TestFechaHoraJson(t *testing.T) {
@@ -130,6 +134,10 @@ func TestFechaHoraJson(t *testing.T) {
 	err = json.Unmarshal([]byte(invalidJSON), &fechaHora2)
 	if err == nil {
 		t.Fatalf("Expected error for invalid JSON, got nil")
+	}
+
+	if err := json.Unmarshal([]byte(`20240101`), &fechaHora2); err == nil {
+		t.Fatalf("Expected error for a non-string date, got nil")
 	}
 }
 
@@ -164,6 +172,10 @@ func TestFechaXML(t *testing.T) {
 		t.Fatalf("Expected error for invalid XML, got nil")
 	}
 
+	if err := xml.Unmarshal([]byte(`<Fecha><x></Fecha>`), &fecha2); err == nil {
+		t.Fatalf("Expected error for malformed XML, got nil")
+	}
+
 }
 
 func TestFechaHoraXML(t *testing.T) {
@@ -195,6 +207,10 @@ func TestFechaHoraXML(t *testing.T) {
 	err = xml.Unmarshal([]byte(invalidXML), &fechaHora2)
 	if err == nil {
 		t.Fatalf("Expected error for invalid XML, got nil")
+	}
+
+	if err := xml.Unmarshal([]byte(`<FechaHora><x></FechaHora>`), &fechaHora2); err == nil {
+		t.Fatalf("Expected error for malformed XML, got nil")
 	}
 
 }

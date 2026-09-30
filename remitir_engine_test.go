@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -332,6 +333,10 @@ func TestRemitirEsperaActivaLlevaElTiempo(t *testing.T) {
 
 	if e.Restante != 120*time.Second {
 		t.Errorf("Expected Restante to be 120s, got %s", e.Restante)
+	}
+
+	if !strings.Contains(e.Error(), "must wait 2m0s") {
+		t.Errorf("Error() = %q, want it to contain the wait", e.Error())
 	}
 }
 

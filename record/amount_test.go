@@ -17,6 +17,7 @@ func TestParseAmount(t *testing.T) {
 		{"-0.50", -50},
 		{"   21.99   ", 2199},
 		{".07", 7},
+		{"5.", 500},
 	}
 
 	for _, tt := range tests {
@@ -46,6 +47,7 @@ func TestParseAmountInvalid(t *testing.T) {
 		{"12.-5"},
 		{"-"},
 		{"+-"},
+		{"1.x5"},
 	}
 
 	for _, tt := range tests {
@@ -251,6 +253,11 @@ func TestAmount_UnmarshalXML(t *testing.T) {
 		{"as", 0, ErrInvalidAmount},
 	}
 
+	var a Amount
+	if err := xml.Unmarshal([]byte("<Amount><x></Amount>"), &a); err == nil {
+		t.Error("Amount.UnmarshalXML() with malformed XML = nil, want error")
+	}
+
 	for _, tt := range testCases {
 		t.Run(tt.input, func(t *testing.T) {
 			var a Amount
@@ -301,6 +308,11 @@ func TestPorcentaje_UnmarshalXML(t *testing.T) {
 		{"0.00", 0, nil},
 		{"0.50", 50, nil},
 		{"as", 0, ErrInvalidPorcentaje},
+	}
+
+	var p Porcentaje
+	if err := xml.Unmarshal([]byte("<Porcentaje><x></Porcentaje>"), &p); err == nil {
+		t.Error("Porcentaje.UnmarshalXML() with malformed XML = nil, want error")
 	}
 
 	for _, tt := range testCases {

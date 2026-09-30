@@ -106,7 +106,7 @@ func TestFingerPrintVectors(t *testing.T) {
 
 				t.Logf("record: %+v", rec)
 
-				got = registrationFingerprintInput(rec)
+				got = rec.FingerprintInput()
 
 			case "anulacion":
 				expeditionDate, err := time.Parse(fechaFormat, v.Campos.FechaExpedicionFacturaAnulada)
@@ -141,7 +141,7 @@ func TestFingerPrintVectors(t *testing.T) {
 
 				t.Logf("record: %+v", rec)
 
-				got = cancellationFingerprintInput(rec)
+				got = rec.FingerprintInput()
 
 			default:
 				t.Fatalf("Unknown vector type: %s", v.Tipo)
