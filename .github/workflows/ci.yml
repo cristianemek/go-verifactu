@@ -45,7 +45,7 @@ jobs:
 
       - name: Test verifactud
         working-directory: cmd/verifactud
-        run: go test -race ./...
+        run: go test -race -covermode=atomic -coverprofile=coverage.out ./...
 
       - name: Vet sqlite
         working-directory: store/sqlite
@@ -53,7 +53,7 @@ jobs:
 
       - name: Test sqlite
         working-directory: store/sqlite
-        run: go test -race ./...
+        run: go test -race -covermode=atomic -coverprofile=coverage.out ./...
 
       - name: Root module has no dependencies
         run: |
@@ -62,11 +62,30 @@ jobs:
             exit 1
           fi
 
-      - name: Upload coverage to Codecov
+      - name: Upload coverage to Codecov (libreria)
         if: matrix.go-version == 'stable'
         uses: codecov/codecov-action@v4
         with:
           files: ./coverage.out
+          flags: libreria
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false
+
+      - name: Upload coverage to Codecov (sqlite)
+        if: matrix.go-version == 'stable'
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./store/sqlite/coverage.out
+          flags: sqlite
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false
+
+      - name: Upload coverage to Codecov (servicio)
+        if: matrix.go-version == 'stable'
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./cmd/verifactud/coverage.out
+          flags: servicio
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: false
 
