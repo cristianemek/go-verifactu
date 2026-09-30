@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: verifactud
-  version: 0.9.0
+  version: 0.10.0
   description: |
     Registro y remisión de facturas a VERI*FACTU (AEAT).
 
@@ -32,7 +32,7 @@ paths:
         remisión a la AEAT ocurre después, por su cuenta.
 
         Es idempotente: repetir el alta de la misma factura devuelve el mismo
-        registro, salvo que se use tras_rechazo.
+        registro, salvo que se use tras_rechazo o subsanacion.
       parameters:
         - $ref: '#/components/parameters/Nif'
         - name: tras_rechazo
@@ -329,7 +329,7 @@ components:
 
   responses:
     PeticionInvalida:
-      description: JSON mal formado, fecha inválida o registro que incumple las reglas de la AEAT
+      description: JSON mal formado, fecha inválida, NIF emisor distinto del de la ruta o registro que incumple las reglas de la AEAT
       content:
         application/json:
           schema:

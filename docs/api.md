@@ -49,7 +49,7 @@ configurado o el token no es el suyo: `401`, sin distinguir los dos casos.
 | | cuándo |
 | --- | --- |
 | `?tras_rechazo` | la AEAT rechazó el último envío de esa factura |
-| `?subsanacion` | la AEAT la tiene registrada y hay que corregir un dato |
+| `?subsanacion` | solo en `/alta`: la AEAT la tiene registrada y hay que corregir un dato |
 
 Con `?tras_rechazo` el servicio decide solo el indicador que toca según el
 historial de la factura. Ver [ejemplo 06](../examples/06-estado-y-correccion.md).
@@ -109,10 +109,8 @@ Hay cuatro códigos cuya reacción no es la obvia —`3000`, `2007`, `2000` y
 | `401` | falta el token, no es el del NIF, o el NIF no está configurado |
 | `404` | la factura no existe |
 | `409` | dos peticiones a la vez sobre la misma cadena: reintentar |
-| `422` | la AEAT rechazó el mensaje entero: hay datos mal, no reintentar igual |
-| `429` | la AEAT marcó tiempo de espera; el servicio ya lo gestiona |
-| `502` | fallo del lado de la AEAT |
-| `503` | el certificado falta o no lo aceptan |
+| `502` | fallo del lado de la AEAT (solo `/conexion`) |
+| `503` | el certificado falta o no lo aceptan (solo `/conexion`) |
 | `500` | fallo del servicio: mirar el log |
 
 El `400` por validación es el más común al integrar, y el mensaje dice el campo.

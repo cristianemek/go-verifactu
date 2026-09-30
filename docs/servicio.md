@@ -37,6 +37,28 @@ openssl pkcs12 -in certificado.p12 -out certificado.pem -nodes
 Si OpenSSL 3 se queja del cifrado (los de la FNMT suelen usar el antiguo), añade
 `-legacy`.
 
+### El bloque `sistema`
+
+Describe el software ante la AEAT, no a tus clientes. Va dentro de cada factura
+que se remite, para que la AEAT sepa qué programa la generó y quién responde de
+él: el productor, que es quien firma la declaración responsable.
+
+| campo | qué es |
+| --- | --- |
+| `NombreRazon`, `NIF` | el productor del software: tú, si eres quien lo pone en marcha |
+| `NombreSistemaInformatico` | el nombre del programa |
+| `IdSistemaInformatico` | dos letras o cifras que el productor pone a este programa para distinguirlo de otros suyos. Con uno solo, `01` |
+| `Version` | la versión del programa: se sube al actualizar |
+| `NumeroInstalacion` | distingue esta instalación de otras del mismo programa |
+| `TipoUsoPosibleSoloVerifactu` | `S`: este programa solo funciona en modo VERI\*FACTU |
+| `TipoUsoPosibleMultiOT` | `S`: puede facturar por varios NIF |
+| `IndicadorMultiplesOT` | `S` si esta instalación tiene más de un NIF en `tenants` |
+
+**`IdSistemaInformatico` se elige una vez y no se cambia.** Además de ir a la
+AEAT, el servicio lo usa para separar las cadenas: cada NIF encadena bajo ese
+valor (el fichero `datos/<NIF>-01.jsonl`). Con otro, el servicio arranca con una
+cadena nueva y vacía, sin avisar.
+
 ## Cuándo se envía a la AEAT
 
 No hay endpoint para enviar. Cada alta se remite al momento, salvo que la AEAT
