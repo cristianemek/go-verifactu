@@ -33,14 +33,6 @@ func (r RegistroAlta) ComparisonURL(entorno Entorno) (string, error) {
 		return "", fmt.Errorf("%w: NumSerieFactura contains non-ASCII characters", ErrInvalidQr)
 	}
 
-	if !validAscii(r.IDFactura.FechaExpedicionFactura.Format()) {
-		return "", fmt.Errorf("%w: FechaExpedicionFactura contains non-ASCII characters", ErrInvalidQr)
-	}
-
-	if !validAscii(r.ImporteTotal.Format()) {
-		return "", fmt.Errorf("%w: ImporteTotal contains non-ASCII characters", ErrInvalidQr)
-	}
-
 	params := url.Values{}
 
 	params.Set("nif", r.IDFactura.IDEmisorFactura)
