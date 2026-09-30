@@ -46,9 +46,15 @@ func TestComandoMigrar(t *testing.T) {
 				"token": "token123",
 				"certificado": "dev.pem",
 				"tipo_certificado": "representante"
+				},
+				"%s": {
+				"nombre": "EMPRESA DE PRUEBAS SL",
+				"token": "token456",
+				"certificado": "dev.pem",
+				"tipo_certificado": "representante"
 				}
 			}
-			}`, rutaLedger, tenant.IDSistemaInformatico, tenant.NIF)
+			}`, rutaLedger, tenant.IDSistemaInformatico, tenant.NIF, "89890002L")
 
 	origen, err := ledger.New(rutaLedger)
 	if err != nil {
@@ -178,3 +184,5 @@ func TestComandoMigrar(t *testing.T) {
 		t.Fatal("comandoMigrar() sobre un destino existente = nil, want error")
 	}
 }
+
+func TestComandoMigrarFalloBorraDestino(t *testing.T) {}

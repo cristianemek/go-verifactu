@@ -142,9 +142,9 @@ func comandoMigrar(args []string) error {
 		if err != nil {
 			if errors.Is(err, verifactu.ErrNoEncontrado) {
 				origenSinEnvios = true
+			} else {
+				return fmt.Errorf("error retrieving ultimo envio for tenant %s: %w", nif, err)
 			}
-
-			return fmt.Errorf("error retrieving ultimo envio for tenant %s: %w", nif, err)
 		}
 
 		var destinoSinEnvios bool
@@ -153,9 +153,9 @@ func comandoMigrar(args []string) error {
 		if err != nil {
 			if errors.Is(err, verifactu.ErrNoEncontrado) {
 				destinoSinEnvios = true
+			} else {
+				return fmt.Errorf("error retrieving ultimo envio for tenant %s: %w", nif, err)
 			}
-
-			return fmt.Errorf("error retrieving ultimo envio for tenant %s: %w", nif, err)
 		}
 
 		if origenSinEnvios != destinoSinEnvios {
