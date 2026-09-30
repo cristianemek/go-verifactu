@@ -3,8 +3,8 @@ module github.com/cristianemek/go-verifactu/cmd/verifactud
 go 1.27.0
 
 require (
-	github.com/cristianemek/go-verifactu v0.10.0
-	github.com/cristianemek/go-verifactu/store/sqlite v0.10.0
+	github.com/cristianemek/go-verifactu v1.0.0
+	github.com/cristianemek/go-verifactu/store/sqlite v1.0.0
 )
 
 require (
