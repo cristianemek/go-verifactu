@@ -14,7 +14,7 @@ type Store interface {
 	// forking the chain. The Engine retries on it.
 	Anexar(ctx context.Context, t Tenant, e *Entry) error
 
-	// Buscar returns that entry, or ErrNoEncontrado.
+	// Buscar returns that entry, or ErrNoEncontrado. If the invoice was corrected, it returns the latest entry, the one in force.
 	Buscar(ctx context.Context, t Tenant, idFactura IDFactura, op Operacion) (*Entry, error)
 
 	// Cadena returns all entries in chain order. An empty result if the chain is empty.

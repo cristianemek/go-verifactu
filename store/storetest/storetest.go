@@ -324,6 +324,19 @@ func testCorrecion(t *testing.T, s verifactu.Store) {
 	if lastEntry.Correccion != true {
 		t.Errorf("Ultimo() = %v, want true", lastEntry.Correccion)
 	}
+
+	got, err := s.Buscar(context.Background(), tenant, entryCorregido.IDFactura, verifactu.OperacionAlta)
+	if err != nil {
+		t.Fatalf("Buscar() = %v, want nil", err)
+	}
+
+	if got.Secuencia != entryCorregido.Secuencia {
+		t.Errorf("Buscar() = %v, want %v", got.Secuencia, entryCorregido.Secuencia)
+	}
+
+	if !got.Correccion {
+		t.Errorf("Buscar() = %v, want true", got.Correccion)
+	}
 }
 
 // testPendientes recibe el constructor y no un store: cada fila empieza vacía.

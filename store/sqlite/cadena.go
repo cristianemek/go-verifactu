@@ -90,7 +90,7 @@ func (s *Store) Buscar(ctx context.Context, t verifactu.Tenant, id verifactu.IDF
 					WHERE tenant_nif = ? AND tenant_sistema = ?
 					AND factura_nif = ? AND factura_num_serie = ? AND factura_fecha = ?
 					AND operacion = ?
-					ORDER BY secuencia ASC
+					ORDER BY secuencia DESC
 					LIMIT 1`
 
 	row := s.db.QueryRowContext(ctx, consulta, t.NIF, t.IDSistemaInformatico, id.NIF, id.NumSerie, id.Fecha.Format(), string(op))

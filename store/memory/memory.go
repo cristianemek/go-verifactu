@@ -45,7 +45,7 @@ func (s *Store) Buscar(ctx context.Context, t verifactu.Tenant, id verifactu.IDF
 
 	defer s.mu.RUnlock()
 
-	for _, e := range s.cadenas[t] {
+	for _, e := range slices.Backward(s.cadenas[t]) {
 		if e.Matches(id, op) {
 			return e, nil
 		}
