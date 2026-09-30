@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/cristianemek/go-verifactu"
@@ -63,10 +64,23 @@ func TestVerificarCadenaValida(t *testing.T) {
 	}
 }
 
+func rehacerHuella(e *verifactu.Entry) {
+	if e.Alta != nil {
+		e.Huella = e.Alta.Fingerprint()
+		e.Alta.Huella = e.Huella
+	}
+
+	if e.Anulacion != nil {
+		e.Huella = e.Anulacion.Fingerprint()
+		e.Anulacion.Huella = e.Huella
+	}
+}
+
 func TestVerificarCadenaRota(t *testing.T) {
 	testCases := []struct {
 		name    string
 		breakFn func([]*verifactu.Entry) []*verifactu.Entry
+		wantMsg string
 	}{
 		{
 			name: "secuencia alterada",
@@ -74,6 +88,7 @@ func TestVerificarCadenaRota(t *testing.T) {
 				entries[1].Secuencia = 5
 				return entries
 			},
+			wantMsg: "secuencia 5 in position 1",
 		},
 		{
 			name: "huella alterada",
@@ -81,6 +96,7 @@ func TestVerificarCadenaRota(t *testing.T) {
 				entries[1].Huella = "altered"
 				return entries
 			},
+			wantMsg: "mismatched fingerprint for",
 		},
 		{
 			name: "registro alterado",
@@ -88,12 +104,14 @@ func TestVerificarCadenaRota(t *testing.T) {
 				entries[1].Alta.CuotaTotal = record.Amount(100)
 				return entries
 			},
+			wantMsg: "mismatched fingerprint for",
 		},
 		{
 			name: "entrada eliminada",
 			breakFn: func(entries []*verifactu.Entry) []*verifactu.Entry {
 				return []*verifactu.Entry{entries[0], entries[2]}
 			},
+			wantMsg: "secuencia 3 in position 1",
 		},
 		{
 			name: "huella de Alta alterada",
@@ -101,6 +119,7 @@ func TestVerificarCadenaRota(t *testing.T) {
 				entries[1].Alta.Huella = "altered"
 				return entries
 			},
+			wantMsg: "mismatched fingerprint in entry",
 		},
 		{
 			name: "huella de Anulacion alterada",
@@ -108,6 +127,70 @@ func TestVerificarCadenaRota(t *testing.T) {
 				entries[3].Anulacion.Huella = "altered"
 				return entries
 			},
+			wantMsg: "mismatched fingerprint in entry",
+		},
+		{
+			name: "Alta a nil",
+			breakFn: func(entries []*verifactu.Entry) []*verifactu.Entry {
+				entries[1].Alta = nil
+				return entries
+			},
+			wantMsg: "missing Alta",
+		},
+		{
+			name: "Anulacion a nil",
+			breakFn: func(entries []*verifactu.Entry) []*verifactu.Entry {
+				entries[3].Anulacion = nil
+				return entries
+			},
+			wantMsg: "missing Anulacion",
+		},
+		{
+			name: "operacion desconocida",
+			breakFn: func(entries []*verifactu.Entry) []*verifactu.Entry {
+				entries[1].Operacion = "otra"
+				return entries
+			},
+			wantMsg: "unknown operation",
+		},
+		{
+			name: "primera sin PrimerRegistro",
+			breakFn: func(entries []*verifactu.Entry) []*verifactu.Entry {
+				entries[0].Alta.Encadenamiento.PrimerRegistro = nil
+				rehacerHuella(entries[0])
+				return entries
+			},
+			wantMsg: "non-nil PrimerRegistro",
+		},
+		{
+			name: "primera con RegistroAnterior",
+			breakFn: func(entries []*verifactu.Entry) []*verifactu.Entry {
+				anterior := *entries[1].Alta.Encadenamiento.RegistroAnterior
+				entries[0].Alta.Encadenamiento.RegistroAnterior = &anterior
+				rehacerHuella(entries[0])
+				return entries
+			},
+			wantMsg: "must have a nil RegistroAnterior",
+		},
+		{
+			name: "sin RegistroAnterior",
+			breakFn: func(entries []*verifactu.Entry) []*verifactu.Entry {
+				entries[1].Alta.Encadenamiento.RegistroAnterior = nil
+				rehacerHuella(entries[1])
+				return entries
+			},
+			wantMsg: "must have a non-nil RegistroAnterior",
+		},
+		{
+			name: "RegistroAnterior apunta a otra huella",
+			breakFn: func(entries []*verifactu.Entry) []*verifactu.Entry {
+				anterior := *entries[1].Alta.Encadenamiento.RegistroAnterior
+				anterior.Huella = strings.Repeat("A", 64)
+				entries[1].Alta.Encadenamiento.RegistroAnterior = &anterior
+				rehacerHuella(entries[1])
+				return entries
+			},
+			wantMsg: "mismatched RegistroAnterior",
 		},
 	}
 
@@ -120,7 +203,10 @@ func TestVerificarCadenaRota(t *testing.T) {
 			if !errors.Is(err, verifactu.ErrCadenaBifurcada) {
 				t.Fatalf("expected error %v, got %v", verifactu.ErrCadenaBifurcada, err)
 			}
+
+			if !strings.Contains(err.Error(), tc.wantMsg) {
+				t.Errorf("error = %q, want it to contain %q", err, tc.wantMsg)
+			}
 		})
 	}
-
 }
