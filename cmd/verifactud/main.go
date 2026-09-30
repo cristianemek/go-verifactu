@@ -19,31 +19,49 @@ import (
 )
 
 func main() {
-	if len(os.Args) > 1 && os.Args[1] == "migrar" {
-		err := comandoMigrar(os.Args[2:])
-		if err != nil {
-			slog.Error("Error migrating data", "error", err)
-			os.Exit(1)
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+
+	err := ejecutar(ctx, os.Args[1:])
+
+	stop()
+
+	if err != nil {
+		slog.Error("verifactud", "error", err)
+		os.Exit(1)
+	}
+}
+
+func ejecutar(ctx context.Context, args []string) error {
+	if len(args) > 0 && args[0] == "migrar" {
+		if err := comandoMigrar(args[1:]); err != nil {
+			return fmt.Errorf("error migrating data: %w", err)
 		}
 		slog.Info("Data migrated successfully")
-		return
+		return nil
 	}
 
-	path := flag.String("config", "verifactud.json", "Path to the configuration file")
+	fs := flag.NewFlagSet("verifactud", flag.ContinueOnError)
 
-	flag.Parse()
+	path := fs.String("config", "verifactud.json", "Path to the configuration file")
+
+	if err := fs.Parse(args); err != nil {
+		return err
+	}
 
 	cfg, err := cargarConfig(*path)
 	if err != nil {
-		slog.Error("Error loading configuration", "error", err)
-		os.Exit(1)
+		return fmt.Errorf("error loading configuration: %w", err)
+	}
+
+	cada, err := time.ParseDuration(cfg.RemisionCada)
+	if err != nil {
+		return fmt.Errorf("error parsing remision interval: %w", err)
 	}
 
 	if cfg.Log != "" {
 		f, err := os.OpenFile(cfg.Log, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o640)
 		if err != nil {
-			slog.Error("Error opening log file", "error", err)
-			os.Exit(1)
+			return fmt.Errorf("error opening log file: %w", err)
 		}
 		defer f.Close()
 
@@ -52,8 +70,7 @@ func main() {
 
 	srv, err := construirServidor(cfg)
 	if err != nil {
-		slog.Error("Error constructing server", "error", err)
-		os.Exit(1)
+		return fmt.Errorf("error constructing server: %w", err)
 	}
 
 	mux := http.NewServeMux()
@@ -64,16 +81,8 @@ func main() {
 	mux.HandleFunc("GET /v1/{nif}/estado", srv.auth(srv.estado))
 	mux.HandleFunc("GET /v1/{nif}/conexion", srv.auth(srv.conexion))
 
-	cada, err := time.ParseDuration(cfg.RemisionCada)
-
-	if err != nil {
-		slog.Error("Error parsing remision interval", "error", err)
-		os.Exit(1)
-	}
-
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-
-	defer stop()
+	ctx, cancelar := context.WithCancel(ctx)
+	defer cancelar()
 
 	hecho := make(chan struct{})
 
@@ -86,30 +95,37 @@ func main() {
 
 	slog.Info("Listening", "address", cfg.Listen)
 
+	errServidor := make(chan error, 1)
+
 	go func() {
 		if err := httpSrv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			slog.Error("Error starting server", "error", err)
-			os.Exit(1)
+			errServidor <- fmt.Errorf("error starting server: %w", err)
 		}
 	}()
 
-	<-ctx.Done()
+	select {
+	case <-ctx.Done():
+	case err = <-errServidor:
+	}
 
 	slog.Info("Shutting down server")
+
+	cancelar()
 
 	ctxShutdown, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	err = httpSrv.Shutdown(ctxShutdown)
-
-	if err != nil {
+	if err := httpSrv.Shutdown(ctxShutdown); err != nil {
 		slog.Error("Error shutting down server", "error", err)
 	}
+
 	<-hecho
 
 	if err := srv.cerrar(); err != nil {
 		slog.Error("Error closing store", "error", err)
 	}
+
+	return err
 }
 
 func construirServidor(cfg *Config) (*servidor, error) {
