@@ -15,7 +15,7 @@ import (
 )
 
 func comandoMigrar(args []string) error {
-	fs := flag.NewFlagSet("migrar", flag.ExitOnError)
+	fs := flag.NewFlagSet("migrar", flag.ContinueOnError)
 
 	config := fs.String("config", "verifactud.json", "Path to the configuration file")
 
