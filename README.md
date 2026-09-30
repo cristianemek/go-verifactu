@@ -11,6 +11,16 @@ URL del QR y las manda a Hacienda.
 Viene de dos formas: como **librería** de Go, o como **servicio HTTP** si tu
 software está en otro lenguaje.
 
+Está pensado para montarlo en tu propio servidor, con systemd o con Docker, y
+que hable con tus proyectos, estén en el lenguaje que estén, sin tener que
+reimplementar en cada uno toda la lógica y las comprobaciones de VERI\*FACTU.
+Levantas el servicio, te comunicas con él por HTTP, y él se encarga de
+encadenar, remitir y registrarlo todo, y te devuelve el estado de la remisión y
+la URL del QR.
+
+No necesitas saber Go para usarlo: la librería es para quien quiera meterlo en
+su software en Go, y el servicio, para quien use cualquier otro lenguaje.
+
 Sin dependencias. Go 1.27+. En desarrollo: la API puede cambiar hasta la v1.0.0.
 
 ## La librería
