@@ -1,7 +1,5 @@
-github.com/cristianemek/go-verifactu v0.9.0 h1:HPozsWS5xZgF00/Z208X4/KGO+QsgZVkvtX2YN/Tb5I=
-github.com/cristianemek/go-verifactu v0.9.0/go.mod h1:xnNbgzMA051nfowJ3dydy2ygryIyCR9wN3enU5wPugM=
-github.com/cristianemek/go-verifactu v0.10.0 h1:Zrx+hE31A2jxLGBrSoUAQqZvQuXwwBwz+FRydnj1djo=
-github.com/cristianemek/go-verifactu v0.10.0/go.mod h1:Ztpnx8up7Q+r8tU9UssWZLyBmtS9Jq7ARqq3mKomBFE=
+github.com/cristianemek/go-verifactu v1.0.0 h1:D8QwXoir/N7QSb4gg3sb7dMeEaM83HDAvEdaqDurMj0=
+github.com/cristianemek/go-verifactu v1.0.0/go.mod h1:Ztpnx8up7Q+r8tU9UssWZLyBmtS9Jq7ARqq3mKomBFE=
 github.com/dustin/go-humanize v1.1.0 h1:dbKTrvD0klcbBV/h4AWJdMuZogJACoMlvWIWZ5b2xWg=
 github.com/dustin/go-humanize v1.1.0/go.mod h1:hc1CvRkJMsgxqjmjMQF3QNRAZBwY8AXBAzKYoSX9sFI=
 github.com/google/pprof v0.0.0-20260802141513-ef3492d7dac3 h1:LMLX+LgTNWpfvCBdFebv6EsYotImrt/Ppc5cXIriCSo=
