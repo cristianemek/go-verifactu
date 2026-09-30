@@ -32,6 +32,12 @@ func cadenaDePrueba(t *testing.T) []*verifactu.Entry {
 		}
 	}
 
+	_, err = engine.Anular(context.Background(), tenant, validRegistroAnulacion("001"))
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	entry, err := store.Cadena(context.Background(), tenant)
 
 	if err != nil {
@@ -44,8 +50,8 @@ func cadenaDePrueba(t *testing.T) []*verifactu.Entry {
 func TestVerificarCadenaValida(t *testing.T) {
 	c := cadenaDePrueba(t)
 
-	if len(c) != 3 {
-		t.Fatalf("expected 3 entries, got %d", len(c))
+	if len(c) != 4 {
+		t.Fatalf("expected 4 entries, got %d", len(c))
 	}
 
 	if err := verifactu.VerificarCadena(c); err != nil {
@@ -87,6 +93,20 @@ func TestVerificarCadenaRota(t *testing.T) {
 			name: "entrada eliminada",
 			breakFn: func(entries []*verifactu.Entry) []*verifactu.Entry {
 				return []*verifactu.Entry{entries[0], entries[2]}
+			},
+		},
+		{
+			name: "huella de Alta alterada",
+			breakFn: func(entries []*verifactu.Entry) []*verifactu.Entry {
+				entries[1].Alta.Huella = "altered"
+				return entries
+			},
+		},
+		{
+			name: "huella de Anulacion alterada",
+			breakFn: func(entries []*verifactu.Entry) []*verifactu.Entry {
+				entries[3].Anulacion.Huella = "altered"
+				return entries
 			},
 		},
 	}

@@ -14,6 +14,7 @@ func VerificarCadena(entradas []*Entry) error {
 
 		var calculada string
 		var enc record.Encadenamiento
+		var guardada string
 
 		switch e.Operacion {
 		case OperacionAlta:
@@ -23,6 +24,7 @@ func VerificarCadena(entradas []*Entry) error {
 
 			calculada = e.Alta.Fingerprint()
 			enc = e.Alta.Encadenamiento
+			guardada = e.Alta.Huella
 
 		case OperacionAnulacion:
 			if e.Anulacion == nil {
@@ -31,12 +33,17 @@ func VerificarCadena(entradas []*Entry) error {
 
 			calculada = e.Anulacion.Fingerprint()
 			enc = e.Anulacion.Encadenamiento
+			guardada = e.Anulacion.Huella
 		default:
 			return fmt.Errorf("%w: unknown operation type %s for secuencia %d", ErrCadenaBifurcada, e.Operacion, e.Secuencia)
 		}
 
 		if calculada != e.Huella {
 			return fmt.Errorf("%w: corrupt entry: mismatched fingerprint for secuencia %d", ErrCadenaBifurcada, e.Secuencia)
+		}
+
+		if guardada != e.Huella {
+			return fmt.Errorf("%w: corrupt entry: mismatched fingerprint in entry for secuencia %d", ErrCadenaBifurcada, e.Secuencia)
 		}
 
 		if i == 0 {
