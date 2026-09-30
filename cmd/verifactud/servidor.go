@@ -93,6 +93,8 @@ func mapearError(err error) (int, string) {
 		return http.StatusBadRequest, err.Error()
 	case errors.Is(err, verifactu.ErrOpcionNoAplicable):
 		return http.StatusBadRequest, err.Error()
+	case errors.Is(err, verifactu.ErrEmisorDistinto):
+		return http.StatusBadRequest, err.Error()
 	case errors.Is(err, verifactu.ErrNoEncontrado):
 		return http.StatusNotFound, err.Error()
 	case errors.Is(err, verifactu.ErrFaultCliente):

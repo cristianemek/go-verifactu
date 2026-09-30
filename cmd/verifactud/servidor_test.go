@@ -207,6 +207,11 @@ func TestAlta(t *testing.T) {
 			cuerpo:         `{"IDFactura":{"IDEmisorFactura":"89890001K","NumSerieFactura":"F-2026-009","FechaExpedicionFactura":"10-09-2026"}}`,
 			expectedStatus: http.StatusBadRequest,
 		},
+		{
+			name:           "Emisor distinto del NIF de la ruta",
+			cuerpo:         strings.Replace(facturaJSON, `"IDEmisorFactura": "89890001K"`, `"IDEmisorFactura": "89890002L"`, 1),
+			expectedStatus: http.StatusBadRequest,
+		},
 	}
 
 	for _, tc := range testCases {

@@ -163,6 +163,10 @@ func (e *Engine) Alta(ctx context.Context, t Tenant, r record.RegistroAlta, opci
 		Fecha:    r.IDFactura.FechaExpedicionFactura,
 	}
 
+	if id.NIF != t.NIF {
+		return nil, fmt.Errorf("%w: %s, tenant %s", ErrEmisorDistinto, id.NIF, t.NIF)
+	}
+
 	if !esCorreccion {
 		got, err := e.store.Buscar(ctx, t, id, OperacionAlta)
 
@@ -313,6 +317,10 @@ func (e *Engine) Anular(ctx context.Context, t Tenant, r record.RegistroAnulacio
 		NIF:      r.IDFactura.IDEmisorFacturaAnulada,
 		NumSerie: r.IDFactura.NumSerieFacturaAnulada,
 		Fecha:    r.IDFactura.FechaExpedicionFacturaAnulada,
+	}
+
+	if id.NIF != t.NIF {
+		return nil, fmt.Errorf("%w: %s, tenant %s", ErrEmisorDistinto, id.NIF, t.NIF)
 	}
 
 	if !esCorreccion {

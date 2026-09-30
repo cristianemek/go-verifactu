@@ -105,7 +105,7 @@ Hay cuatro códigos cuya reacción no es la obvia —`3000`, `2007`, `2000` y
 
 | código | cuándo |
 | --- | --- |
-| `400` | JSON mal formado, fecha inválida, o el registro no cumple las reglas de la AEAT |
+| `400` | JSON mal formado, fecha inválida, el NIF emisor no es el de la ruta, o el registro no cumple las reglas de la AEAT |
 | `401` | falta el token, no es el del NIF, o el NIF no está configurado |
 | `404` | la factura no existe |
 | `409` | dos peticiones a la vez sobre la misma cadena: reintentar |

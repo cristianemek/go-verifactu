@@ -23,6 +23,7 @@ var (
 	ErrSinPendientes        = errors.New("verifactu: no pending entries to send")
 	ErrRespuestaDescuadrada = errors.New("verifactu: the AEAT answer does not line up with the batch sent")
 	ErrEsperaActiva         = errors.New("verifactu: waiting, cannot send more entries yet")
+	ErrEmisorDistinto       = errors.New("verifactu: the invoice issuer is not the tenant")
 )
 
 type ErrorEspera struct {

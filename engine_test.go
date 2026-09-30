@@ -268,7 +268,10 @@ func TestAislamientoEntreTenants(t *testing.T) {
 		t.Fatalf("Error creating entry for tenant1: %v", err)
 	}
 
-	entry3, err := engine.Alta(context.Background(), tenant2, validRegistroAlta("001"))
+	registroTenant2 := validRegistroAlta("001")
+	registroTenant2.IDFactura.IDEmisorFactura = tenant2.NIF
+
+	entry3, err := engine.Alta(context.Background(), tenant2, registroTenant2)
 	if err != nil {
 		t.Fatalf("Error creating entry for tenant2: %v", err)
 	}
@@ -860,6 +863,52 @@ func TestAltaRechazoPrevio(t *testing.T) {
 				}
 			}
 
+		})
+	}
+}
+
+func TestEmisorDistintoDelTenant(t *testing.T) {
+	tenant := verifactu.Tenant{NIF: "89890001K", IDSistemaInformatico: "01"}
+
+	testCases := []struct {
+		name      string
+		registrar func(*verifactu.Engine) error
+	}{
+		{
+			name: "Alta",
+			registrar: func(e *verifactu.Engine) error {
+				r := validRegistroAlta("001")
+				r.IDFactura.IDEmisorFactura = "89890002L"
+				_, err := e.Alta(context.Background(), tenant, r)
+				return err
+			},
+		},
+		{
+			name: "Anular",
+			registrar: func(e *verifactu.Engine) error {
+				r := validRegistroAnulacion("001")
+				r.IDFactura.IDEmisorFacturaAnulada = "89890002L"
+				_, err := e.Anular(context.Background(), tenant, r)
+				return err
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			store := memory.New()
+			engine, err := verifactu.New(verifactu.Config{Store: store, Now: fixedTime})
+			if err != nil {
+				t.Fatalf("Error creating engine: %v", err)
+			}
+
+			if err := tc.registrar(engine); !errors.Is(err, verifactu.ErrEmisorDistinto) {
+				t.Fatalf("err = %v, want ErrEmisorDistinto", err)
+			}
+
+			if _, err := store.Ultimo(context.Background(), tenant); !errors.Is(err, verifactu.ErrNoEncontrado) {
+				t.Errorf("Ultimo() = %v, want ErrNoEncontrado: no debe anexarse nada", err)
+			}
 		})
 	}
 }
