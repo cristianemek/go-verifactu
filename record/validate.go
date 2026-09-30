@@ -27,6 +27,14 @@ func (r RegistroAlta) Validate() error {
 			errs = append(errs, fmt.Errorf("%w: DetalleDesglose[%d] must have either CalificacionOperacion or OperacionExenta", ErrValidation, i))
 		}
 
+		if d.TipoImpositivo != nil && !d.TipoImpositivo.valido() {
+			errs = append(errs, fmt.Errorf("%w: DetalleDesglose[%d] TipoImpositivo must be between 0 and 999.99", ErrValidation, i))
+		}
+
+		if d.TipoRecargoEquivalencia != nil && !d.TipoRecargoEquivalencia.valido() {
+			errs = append(errs, fmt.Errorf("%w: DetalleDesglose[%d] TipoRecargoEquivalencia must be between 0 and 999.99", ErrValidation, i))
+		}
+
 	}
 
 	if r.NombreRazonEmisor == "" {

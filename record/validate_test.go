@@ -81,6 +81,44 @@ func validRegistroAnulacion() RegistroAnulacion {
 	}
 }
 
+func TestValidatePorcentaje(t *testing.T) {
+	testCases := []struct {
+		name    string
+		tipo    *Porcentaje
+		recargo *Porcentaje
+		wantErr bool
+	}{
+		{name: "TipoImpositivo negativo", tipo: new(Porcentaje(-1)), wantErr: true},
+		{name: "TipoImpositivo mayor de 999,99", tipo: new(Porcentaje(100000)), wantErr: true},
+		{name: "TipoRecargoEquivalencia negativo", recargo: new(Porcentaje(-1)), wantErr: true},
+		{name: "TipoRecargoEquivalencia mayor de 999,99", recargo: new(Porcentaje(100000)), wantErr: true},
+		{name: "Limite inferior", tipo: new(Porcentaje(0)), recargo: new(Porcentaje(0))},
+		{name: "Limite superior", tipo: new(Porcentaje(99999)), recargo: new(Porcentaje(99999))},
+		{name: "Sin porcentajes"},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			rec := validRegistroAlta()
+			rec.Desglose.DetalleDesglose[0].TipoImpositivo = tc.tipo
+			rec.Desglose.DetalleDesglose[0].TipoRecargoEquivalencia = tc.recargo
+
+			err := rec.Validate()
+
+			if !tc.wantErr {
+				if err != nil {
+					t.Fatalf("Validate() = %v, want nil", err)
+				}
+				return
+			}
+
+			if !errors.Is(err, ErrValidation) {
+				t.Fatalf("Validate() = %v, want ErrValidation", err)
+			}
+		})
+	}
+}
+
 func TestValidateValido(t *testing.T) {
 	rec := validRegistroAlta()
 	if err := rec.Validate(); err != nil {

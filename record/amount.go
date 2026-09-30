@@ -11,6 +11,9 @@ type Amount int64
 
 type Porcentaje int64
 
+// maxPorcentaje is 999.99, the largest percentage the AEAT schema accepts.
+const maxPorcentaje = 99999
+
 func ParseAmount(s string) (Amount, error) {
 	cleanString := strings.TrimSpace(s)
 
@@ -148,12 +151,16 @@ func ParsePorcentaje(s string) (Porcentaje, error) {
 		return 0, fmt.Errorf("%w: negative porcentaje", ErrInvalidPorcentaje)
 	}
 
-	if porcentaje > 99999 {
+	if porcentaje > maxPorcentaje {
 		return 0, fmt.Errorf("%w: porcentaje exceeds 999.99%%", ErrInvalidPorcentaje)
 	}
 
 	return Porcentaje(porcentaje), nil
 
+}
+
+func (p Porcentaje) valido() bool {
+	return 0 <= p && p <= maxPorcentaje
 }
 
 func (p Porcentaje) Format() string {
