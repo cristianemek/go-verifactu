@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: verifactud
-  version: 0.10.0
+  version: 1.0.0
   description: |
     Registro y remisión de facturas a VERI*FACTU (AEAT).
 

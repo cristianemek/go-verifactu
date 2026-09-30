@@ -21,7 +21,7 @@ la URL del QR.
 No necesitas saber Go para usarlo: la librería es para quien quiera meterlo en
 su software en Go, y el servicio, para quien use cualquier otro lenguaje.
 
-Sin dependencias. Go 1.27+. En desarrollo: la API puede cambiar hasta la v1.0.0.
+Sin dependencias. Go 1.27+. Versión estable: la API no cambia en toda la v1.
 
 ## La librería
 
