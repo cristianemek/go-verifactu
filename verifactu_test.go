@@ -179,3 +179,9 @@ func TestLockNoBloqueaOtrosTenants(t *testing.T) {
 		t.Fatal("tenant2 was blocked by tenant1 lock, but it should not have been")
 	}
 }
+
+func TestTipoOperacionDesconocida(t *testing.T) {
+	if got := tipoOperacion("otra"); got != "" {
+		t.Errorf("tipoOperacion(otra) = %q, want vacío", got)
+	}
+}

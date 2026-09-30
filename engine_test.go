@@ -719,6 +719,18 @@ func TestSistemaInformaticoDesdeConfig(t *testing.T) {
 	if entry.Alta.SistemaInformatico.NombreSistemaInformatico != "CONFIG" {
 		t.Errorf("Expected NombreSistemaInformatico to be 'CONFIG', got %s", entry.Alta.SistemaInformatico.NombreSistemaInformatico)
 	}
+
+	a := validRegistroAnulacion("001")
+	a.SistemaInformatico = record.SistemaInformatico{}
+
+	anulacion, err := engine.Anular(context.Background(), verifactu.Tenant{NIF: "89890001K", IDSistemaInformatico: "01"}, a)
+	if err != nil {
+		t.Fatalf("Error creating anulacion entry: %v", err)
+	}
+
+	if anulacion.Anulacion.SistemaInformatico.NombreSistemaInformatico != "CONFIG" {
+		t.Errorf("Expected NombreSistemaInformatico to be 'CONFIG', got %s", anulacion.Anulacion.SistemaInformatico.NombreSistemaInformatico)
+	}
 }
 
 func TestSistemaInformaticoConfigGanaAlRegistro(t *testing.T) {
@@ -763,6 +775,20 @@ func TestSistemaInformaticoRequeridoSinConfig(t *testing.T) {
 	_, err = engine.Alta(context.Background(), verifactu.Tenant{NIF: "89890001K", IDSistemaInformatico: "01"}, r)
 	if !errors.Is(err, record.ErrValidation) {
 		t.Fatalf("Expected ErrValidation when SistemaInformatico is empty and no config provided, got %v", err)
+	}
+
+	a := validRegistroAnulacion("001")
+	a.SistemaInformatico = record.SistemaInformatico{}
+
+	_, err = engine.Anular(context.Background(), verifactu.Tenant{NIF: "89890001K", IDSistemaInformatico: "01"}, a)
+	if !errors.Is(err, record.ErrValidation) {
+		t.Fatalf("Expected ErrValidation for the anulacion, got %v", err)
+	}
+}
+
+func TestNewSinStore(t *testing.T) {
+	if _, err := verifactu.New(verifactu.Config{}); !errors.Is(err, verifactu.ErrStoreRequerido) {
+		t.Fatalf("New() = %v, want ErrStoreRequerido", err)
 	}
 }
 

@@ -113,6 +113,7 @@ func TestRemitirCaminoFeliz(t *testing.T) {
 		CSV:               "CSV-DE-PRUEBA",
 		TiempoEsperaEnvio: "120",
 		EstadoEnvio:       record.EstadoEnvioCorrecto,
+		DatosPresentacion: &record.DatosPresentacion{NIFPresentador: "89890001K"},
 		RespuestaLinea: []record.RespuestaLinea{
 			respuestaLineaPara(entry1, record.TipoOperacionAlta, record.EstadoRegistroCorrecto),
 			respuestaLineaPara(entry2, record.TipoOperacionAlta, record.EstadoRegistroCorrecto),
@@ -132,6 +133,19 @@ func TestRemitirCaminoFeliz(t *testing.T) {
 
 	if envio.CSV != "CSV-DE-PRUEBA" {
 		t.Errorf("Expected CSV to be 'CSV-DE-PRUEBA', got '%s'", envio.CSV)
+	}
+
+	if envio.NIFPresentador != "89890001K" {
+		t.Errorf("Expected NIFPresentador to be '89890001K', got '%s'", envio.NIFPresentador)
+	}
+
+	envioDe, err := engine.EnvioDe(context.Background(), tenant, entry2.Secuencia)
+	if err != nil {
+		t.Fatalf("EnvioDe() = %v", err)
+	}
+
+	if envioDe.CSV != envio.CSV {
+		t.Errorf("EnvioDe() CSV = %q, want %q", envioDe.CSV, envio.CSV)
 	}
 
 	if envio.TiempoEspera != 120*time.Second {
