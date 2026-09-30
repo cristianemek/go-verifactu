@@ -42,7 +42,7 @@ func comandoMigrar(args []string) error {
 	}
 
 	if _, err := os.Stat(*destino); err == nil {
-		return fmt.Errorf("target SQLite database file already exists: %s", *destino)
+		return fmt.Errorf("target SQLite database file already exists: %s (if it comes from a failed migration, delete it and retry)", *destino)
 	}
 
 	store, err := ledger.New(cfg.Data)
@@ -57,12 +57,25 @@ func comandoMigrar(args []string) error {
 		return fmt.Errorf("error creating sqlite store: %w", err)
 	}
 
-	defer sqliteStore.Close()
+	err = migrarTenants(context.Background(), cfg, store, sqliteStore)
 
+	if errClose := sqliteStore.Close(); err == nil {
+		err = errClose
+	}
+
+	if err != nil {
+		borrarDestino(*destino)
+		return err
+	}
+
+	return nil
+}
+
+func migrarTenants(ctx context.Context, cfg *Config, store *ledger.Store, sqliteStore *sqlite.Store) error {
 	for nif := range cfg.Tenants {
 		tenant := verifactu.Tenant{NIF: nif, IDSistemaInformatico: cfg.Sistema.IdSistemaInformatico}
 
-		entries, err := store.Cadena(context.Background(), tenant)
+		entries, err := store.Cadena(ctx, tenant)
 		if err != nil {
 			return fmt.Errorf("error migrating tenant %s: %w", nif, err)
 		}
@@ -70,7 +83,7 @@ func comandoMigrar(args []string) error {
 		slog.Info("Migrating tenant", "nif", nif, "entries", len(entries))
 
 		for _, entry := range entries {
-			err := sqliteStore.Anexar(context.Background(), tenant, entry)
+			err := sqliteStore.Anexar(ctx, tenant, entry)
 			if err != nil {
 				return fmt.Errorf("error migrating entry for tenant %s: %w, secuencia: %d", nif, err, entry.Secuencia)
 			}
@@ -80,7 +93,7 @@ func comandoMigrar(args []string) error {
 		contador := 0
 
 		for _, entry := range entries {
-			envio, err := store.EnvioDe(context.Background(), tenant, entry.Secuencia)
+			envio, err := store.EnvioDe(ctx, tenant, entry.Secuencia)
 
 			if errors.Is(err, verifactu.ErrNoEncontrado) {
 				continue
@@ -94,7 +107,7 @@ func comandoMigrar(args []string) error {
 				continue
 			}
 
-			err = sqliteStore.AnexarEnvio(context.Background(), tenant, envio)
+			err = sqliteStore.AnexarEnvio(ctx, tenant, envio)
 
 			if err != nil {
 				return fmt.Errorf("error migrating envio for tenant %s, secuencia %d: %w", nif, entry.Secuencia, err)
@@ -104,7 +117,7 @@ func comandoMigrar(args []string) error {
 			contador++
 		}
 
-		sqliteEntries, err := sqliteStore.Cadena(context.Background(), tenant)
+		sqliteEntries, err := sqliteStore.Cadena(ctx, tenant)
 		if err != nil {
 			return fmt.Errorf("error retrieving cadena for tenant %s: %w", nif, err)
 		}
@@ -115,12 +128,12 @@ func comandoMigrar(args []string) error {
 			return fmt.Errorf("error verifying cadena for tenant %s: %w", nif, err)
 		}
 
-		ledgerPendientes, err := store.Pendientes(context.Background(), tenant, 0)
+		ledgerPendientes, err := store.Pendientes(ctx, tenant, 0)
 		if err != nil {
 			return fmt.Errorf("error retrieving pendientes for tenant %s: %w", nif, err)
 		}
 
-		sqlitePendientes, err := sqliteStore.Pendientes(context.Background(), tenant, 0)
+		sqlitePendientes, err := sqliteStore.Pendientes(ctx, tenant, 0)
 		if err != nil {
 			return fmt.Errorf("error retrieving pendientes for tenant %s: %w", nif, err)
 		}
@@ -135,7 +148,7 @@ func comandoMigrar(args []string) error {
 			}
 		}
 
-		ledgerUltimoEnvio, err := store.UltimoEnvio(context.Background(), tenant)
+		ledgerUltimoEnvio, err := store.UltimoEnvio(ctx, tenant)
 
 		var origenSinEnvios bool
 
@@ -149,7 +162,7 @@ func comandoMigrar(args []string) error {
 
 		var destinoSinEnvios bool
 
-		sqliteUltimoEnvio, err := sqliteStore.UltimoEnvio(context.Background(), tenant)
+		sqliteUltimoEnvio, err := sqliteStore.UltimoEnvio(ctx, tenant)
 		if err != nil {
 			if errors.Is(err, verifactu.ErrNoEncontrado) {
 				destinoSinEnvios = true
@@ -178,4 +191,12 @@ func comandoMigrar(args []string) error {
 	}
 
 	return nil
+}
+
+func borrarDestino(ruta string) {
+	for _, f := range []string{ruta, ruta + "-wal", ruta + "-shm"} {
+		if err := os.Remove(f); err != nil && !os.IsNotExist(err) {
+			slog.Error("could not delete partial migration file", "file", f, "error", err)
+		}
+	}
 }
