@@ -3,6 +3,7 @@ package aeat
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
 	"errors"
 	"io"
 	"net/http"
@@ -11,6 +12,7 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/cristianemek/go-verifactu"
 	"github.com/cristianemek/go-verifactu/record"
@@ -307,4 +309,48 @@ func TestProbarConexion(t *testing.T) {
 		})
 	}
 
+}
+
+func TestNewClientEntornoDesconocido(t *testing.T) {
+	_, err := NewClient(Config{Entorno: "otro", TipoCertificado: CertificadoRepresentante})
+
+	if !errors.Is(err, ErrEntornoDesconocido) {
+		t.Fatalf("NewClient() = %v, want ErrEntornoDesconocido", err)
+	}
+}
+
+func TestNewClientConCertificado(t *testing.T) {
+	c, err := NewClient(Config{
+		Entorno:         EntornoPruebas,
+		TipoCertificado: CertificadoRepresentante,
+		Certificado:     tls.Certificate{Certificate: [][]byte{{1}}},
+	})
+	if err != nil {
+		t.Fatalf("NewClient() = %v", err)
+	}
+
+	if c.http.Timeout != 30*time.Second {
+		t.Errorf("Timeout = %v, want 30s", c.http.Timeout)
+	}
+}
+
+func TestClientRemitirURLInvalida(t *testing.T) {
+	c := &Client{http: &http.Client{}, url: "http://%%invalid%%"}
+
+	if _, err := c.Remitir(context.Background(), verifactu.Tenant{}, record.RegFactuSistemaFacturacion{}); err == nil {
+		t.Fatal("Remitir() = nil, want error")
+	}
+}
+
+func TestClientRemitirCuerpoCortado(t *testing.T) {
+	c, _ := clienteContra(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Length", "100")
+		w.Write([]byte("<Envelope"))
+	})
+
+	_, err := c.Remitir(context.Background(), verifactu.Tenant{}, record.RegFactuSistemaFacturacion{})
+
+	if !errors.Is(err, io.ErrUnexpectedEOF) {
+		t.Fatalf("Remitir() = %v, want io.ErrUnexpectedEOF", err)
+	}
 }
